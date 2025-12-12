@@ -1,4 +1,4 @@
-function [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC)
+function [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,~,PERIODIC)
 %% Function to take information of all floes and average them over a corase grained area
 id = 'MATLAB:polyshape:boolOperationFailed';
 warning('off',id)
@@ -8,7 +8,11 @@ global Modulus
 %Identify only the live floes
 live = cat(1,Floe.alive);
 Floe(live==0)=[];
-Floe(1:Nbond) = [];
+
+if Nbond>0
+    Floe(1:Nbond) = [];
+end
+
 N0 = length(Floe);
 for ii = 1:N0
     Stress(ii) = max(abs(eig(Floe(ii).Stress)));
@@ -33,7 +37,6 @@ if PERIODIC
     
     ghostFloeX=[];
     ghostFloeY=[];
-    parent=[];
     translation = [];
     
     x=cat(1,Floe.Xi);
@@ -55,13 +58,10 @@ if PERIODIC
     
     Floe=[Floe ghostFloeX];
     
-    x=cat(1,Floe.Xi);
-    y=cat(1,Floe.Yi);
     alive=cat(1,Floe.alive);
     
     for i=1:length(Floe)
         
-        %   if alive(i) && (x(i)>Lx-rmax(i)) || (x(i)<-Lx+rmax(i))
         if alive(i) && (max(abs(poly.Vertices(:,2)))>Ly)
             
             ghostFloeY=[ghostFloeY  Floe(i)];
@@ -75,7 +75,9 @@ if PERIODIC
     
 end
 
-Floe(1:Nb) = [];
+if Nb > 0
+    Floe(1:Nb) = [];
+end
 
 % Idenfity floes that are alive
 live = cat(1,Floe.alive);
@@ -118,24 +120,24 @@ eularian_data.k = zeros(Ny,Nx);
 
 
 mass = cat(1,Floe.mass);
-mass(isnan(mass)==1)=0;
+mass(isnan(mass))=0;
 A = cat(1,Floe.area);
 Overlap = cat(1,Floe.OverlapArea);
-A(isnan(A)==1)=0;
+A(isnan(A))=0;
 U = cat(1,Floe.Ui);
-U(isnan(U)==1)=0;
+U(isnan(U))=0;
 V = cat(1,Floe.Vi);
-V(isnan(V)==1)=0;
+V(isnan(V))=0;
 H = cat(1,Floe.h);
-H(isnan(H)==1)=0;
-dU = cat(1,Floe.dUi_p);%(U-cat(1,Floe.dXi_p))/dt;
-dU(isnan(dU)==1)=0;
-dV = cat(1,Floe.dVi_p);%(V-cat(1,Floe.dYi_p))/dt;
-dV(isnan(dV)==1)=0;
+H(isnan(H))=0;
+dU = cat(1,Floe.dUi_p);
+dU(isnan(dU))=0;
+dV = cat(1,Floe.dVi_p);
+dV(isnan(dV))=0;
 ForceX = cat(1,Floe.Fx);
-ForceX(isnan(ForceX)==1)=0;
+ForceX(isnan(ForceX))=0;
 ForceY = cat(1,Floe.Fy);
-ForceY(isnan(ForceY)==1)=0;
+ForceY(isnan(ForceY))=0;
 Stress = zeros(2,2,length(Floe));
 Strain = zeros(2,2,length(Floe));
 for ii = 1:length(Floe)
@@ -161,11 +163,6 @@ if Nb > 0
             boundaries = union(boundaries,poly(ii));
         end
     end
-    %for jj = 1:Nb
-    %    in = inpolygon(xx(:),yy(:),poly(jj).Vertices(:,1),poly(jj).Vertices(:,2));
-    %    inP(:) = inP(:) + in;
-    %end
-    %inP = flipud(inP);
 else
     boundaries = [];
 end
@@ -236,15 +233,10 @@ for ii = 1:Nx
                 if abs(eularian_data.stress(jj,ii))> 1e8
                     eularian_data.stress(jj,ii) = 0;
                 end
-%                 eularian_data.k(jj,ii) = (1/Mtot*sum(mass(FloeNums).*sqrt(A(FloeNums))./(H(FloeNums)*Modulus)))^(-1);
             end
-%             Sig(logical(potentialInteractions(jj,ii,:))) = eularian_data.stress(jj,ii);
         end
     end
 end
-% Sig = Sig(1:N0);
-% eularian_data.Sig = Sig;
-% plot([Floe.poly])
 warning('on',id)
 
 end

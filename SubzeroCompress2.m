@@ -38,9 +38,7 @@ height.delta = 0;
 %Define ocean currents
 nDTpack = 4500;
 rho_ice=920;
-% [ocean, HFo, h0]=initialize_ocean(dt,nDTpack);
 [ocean, HFo, h0]=initialize_ocean(dt,nDTpack);
-% [ocean, HFo, h0]=initialize_ocean_Nares(dt,nDTpack);
 
 %Define 10m winds
 winds=[0 0];
@@ -55,45 +53,28 @@ y=[-1 1 1 -1 -1]*Ly;
 c2_boundary = [x; y];
 Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
 uright = 0; uleft = 0;
-min_floe_size = 4*Lx*Ly/10000;%4*Lx*Ly/250000;
+min_floe_size = 4*Lx*Ly/10000;
 
 %Initialize Floe state
-%Floe=initialize_Floe('FloeShapes.mat');
-% target_concentration = ones(1,1);
 target_concentration = 1;%[1;1;0];
-%[Floe, Nb] = initial_concentration_Nares(c2_boundary,target_concentration,height,50,min_floe_size);
-%[Floe, Nb] = initial_concentration(c2_boundary,target_concentration,height,500,min_floe_size);
-[Floe, Nb] = initial_concentration(c2_boundary,target_concentration,height,100,min_floe_size);
-%load(['./FloesS3/Floe0000001.mat']); Nb = 0;
+[Floe, bonds, Nbond, Nbound] = initial_concentration(c2_boundary,target_concentration,height,100,1,min_floe_size);
 x=[-1 -1 1 1 -1]*Lx; 
 y=[-1 1 1 -1 -1]*Ly;
 c2_boundary = [x; y];
-%Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
 c2_boundary_poly = polyshape(c2_boundary');
 c2_border = polyshape(2*[-Lx -Lx Lx Lx; -Ly Ly Ly -Ly]'); c2_border = subtract(c2_border, c2_boundary_poly);
-floebound = initialize_floe_values(c2_border, height);
-floebound = initialize_floe_values(c2_border, height);
-% load Floe1; Nb = 0;
-% Floe = Floe(1:200);
-%im_num=94;
-%load(['./Floes/Floe' num2str(im_num,'%07.f') '.mat']);
+floebound = initialize_floe_values(c2_border, height, 1);
 if isfield(Floe,'poly')
     Floe=rmfield(Floe,{'poly'});
 end
 % load floetest
-min_floe_size = (4*Lx*Ly-sum(cat(1,Floe(1:Nb).area)))/20000;
+min_floe_size = (4*Lx*Ly-sum(cat(1,Floe(1:Nbound).area)))/20000;
 global Modulus
 %load Modulus
 collide = 0;
 Modulus = 1.5e3*(mean(sqrt(cat(1,Floe.area)))+min(sqrt(cat(1,Floe.area))));
 save('Modulus.mat','Modulus');
-%load(['./FloesS3/Floe0000404.mat']);
-%load('PackedFloesFullDomain.mat','Floe');
-%Floe= create_packed_domain();
-% load F_dir
-% clear fdir
 fdir.dir =[0;0];fdir.loc =[0 0];
-% f_hist_t =[0;0];
 save('F_dir.mat','fdir')
 frac = 0;
 
@@ -108,15 +89,6 @@ nSnapshots=20; %Total number of model snapshots to save
 nDT=nDTOut*nSnapshots; %Total number of time steps
 
 nSimp = 20;
-
-%nPar = 36; %Number of workers for parfor
-%poolobj = gcp('nocreate'); % If no pool, do not create new one.
-%if isempty(poolobj)
-%    parpool(nPar);
-%else
-%    delete(poolobj);
-%    parpool(nPar);
-%end
 
 target_concentration=1;
 tStart = tic; 
@@ -134,7 +106,7 @@ Xc = (xc(1:end-1)+xc(2:end))/2; Yc = -(yc(1:end-1)+yc(2:end))/2;
 dissolvedNEW=zeros(Ny,Nx);
 
 %Initiailize Eulearian Data
-[eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,c2_boundary,dt,PERIODIC);
+[eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nbound,c2_boundary,dt,PERIODIC);
 Vd = zeros(Ny,Nx,2);
 Vdnew=zeros(Ny, Nx);
 SigXX = zeros(Ny, Nx); SigYX = zeros(Ny, Nx);
@@ -152,7 +124,7 @@ Sig = zeros(Ny, Nx); mass = zeros(Ny,Nx);
 %% Calc interactions and plot initial state
 Floe=Floe(logical(cat(1,Floe.alive)));
 FloeOld = Floe;
-[Floe,dissolvedNEW] = floe_interactions_all(Floe, floebound, uright, 0, ocean, winds,c2_boundary, dt,HFo,min_floe_size,Nx,Ny,Nb, dissolvedNEW,doInt,COLLISION, PERIODIC, RIDGING, RAFTING); % find interaction points
+[Floe,dissolvedNEW] = floe_interactions_all(Floe, floebound, uright, 0, ocean, winds,c2_boundary, dt,HFo,min_floe_size,Nx,Ny,Nbound, dissolvedNEW,doInt,COLLISION, PERIODIC, RIDGING, RAFTING); % find interaction points
 A=cat(1,Floe.area);
 Amax = max(A);
 
@@ -181,12 +153,6 @@ while im_num<500
 
     if mod(i_step,10)==0
         dXo=20000; transport=5e4; % horizontal transport, in m^2/s (controls ocean currents) 
-%         psi_ocean=transport/1*(sin(2*ocean.kx*ocean.Xocn).*cos(2*ocean.ky*ocean.Yocn)+cos(ocean.fCoriolis*Time)*sin(ocean.kx*ocean.Xocn).*cos(ocean.ky*ocean.Yocn)); 
-% 
-%         Uocn=zeros(size(ocean.Xocn)); Vocn=zeros(size(ocean.Xocn));
-%         ocean.Uocn(2:end,:)=-(psi_ocean(2:end,:)-psi_ocean(1:end-1,:))/dXo;
-%         ocean.Vocn(:,2:end)=(psi_ocean(:,2:end)-psi_ocean(:,1:end-1))/dXo;
-        
         disp(' ');
         toc
         disp([num2str(i_step) ' timesteps comleted']); 
@@ -245,34 +211,18 @@ while im_num<500
             kill = [kill ParFloes(ii).kill];
         end
         kill = unique(kill(kill>0));
-        if ~isempty(kill)
-            save('FloeF.mat','Floe','kill','FloeOld')
-            xx = 1; xx(1) =[1 2];
-        end
         live = cat(1,Floe.alive);
         Floe(live==0)=[]; 
         Floe =[Floe floenew];
-        h = cat(1,Floe.h); h2 = cat(1,FloeOld.h);
-        uice = cat(1,Floe.Ui); vice = cat(1,Floe.Vi);
-        if max(abs(uice)) >100 || max(abs(vice)) >100
-%        if sum(cat(1,Floe(h>0.1).area))/sum(cat(1,FloeOld(h2>0.1).area)) < 0.98
-            save('FloeF.mat','Floe','FloeOld')
-            xx = 1; xx(1) =[1 2];
-        end
     end
 
     
     if mod(i_step,nDTOut)==0  %plot the state after a number of timesteps
         
 
-        [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,c2_boundary,dt,PERIODIC);
-%         [eularian_data] = calc_eulerian_data(Floe,Nx,Ny,Nb,c2_boundary,dt,PERIODIC);
+        [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nbound,Nbond,c2_boundary,dt,PERIODIC);
         if ifPlot
-            [fig] =plot_basic(fig, Time,Floe,ocean,c2_boundary_poly,Nb,PERIODIC);
-%            img =  getframe(gcf);
-%            savepng(img.cdata,['./figs/' num2str(im_num,'%03.f') '.jpg']);
-%             [fig] =plot_Nares(fig, Time,Floe,ocean,c2_boundary_poly,Nb);
-%              saveas(fig,['./figs/' num2str(im_num,'%03.f') '.jpg'],'jpg');
+            [fig] =plot_basic(fig, Time,Floe,ocean,c2_boundary_poly,Nbound,PERIODIC);
         end
         
 
@@ -301,46 +251,6 @@ while im_num<500
             Sig = Sig+squeeze(eularian_data.stress);
         end
         
-                
-        if ifPlotStress
-            [fig] =plot_basic_stress(fig, Time,Floe,ocean,c2_boundary_poly,Nb);
-            saveas(fig,['./figs/' num2str(im_num,'%03.f') '.jpg'],'jpg');
-            figure(2)
-            plot(Xc,SigXXa,'kx','linewidth',2); title(['Time = ' num2str(Time/3600) ' hours'],'fontsize',24);
-            drawnow
-        end
-        
-        if ifPlotStressStrain
-            fig2 = figure(fig2);
-%             if im_num==3
-%                 xx = 1; xx(1) =[1 2];
-%             end
-            SigO = Sig;
-%             if Time > 3900
-%                 xx = 1; xx(1) =[1 2];
-%             end
-%             imagesc(Xc,Yc,abs(Sig)); colorbar;%title('$\sigma_{xx}$','interpreter','latex','fontsize',16); colorbar; caxis([0 1e3])
-            subplot(2,4,1); imagesc(Xc,Yc,SigXXa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\sigma_{xx}$','interpreter','latex','fontsize',16); colorbar; caxis([-1e6 1e6])
-            subplot(2,4,2); imagesc(Xc,Yc,SigYXa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\sigma_{yx}$','interpreter','latex','fontsize',16); colorbar; caxis([-1e6 1e6])
-            subplot(2,4,5); imagesc(Xc,Yc,SigXYa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\sigma_{xy}$','interpreter','latex','fontsize',16); colorbar; caxis([-1e6 1e6])
-            subplot(2,4,6); imagesc(Xc,Yc,SigYYa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\sigma_{yy}$','interpreter','latex','fontsize',16); colorbar; caxis([-1e6 1e6])
-            subplot(2,4,3); imagesc(Xc,Yc,Eux); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$E_{11}$','interpreter','latex','fontsize',16); colorbar; caxis([-5e-6 5e-6])
-            subplot(2,4,4); imagesc(Xc,Yc,Evx); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$E_{21}$','interpreter','latex','fontsize',16); colorbar; caxis([-5e-6 5e-6])
-            subplot(2,4,7); imagesc(Xc,Yc,Euy); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$E_{12}$','interpreter','latex','fontsize',16); colorbar; caxis([-5e-6 5e-6])
-            subplot(2,4,8); imagesc(Xc,Yc,Evy); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$E_{22}$','interpreter','latex','fontsize',16); colorbar; caxis([-5e-6 5e-6])
-            saveas(fig2,['./figs/' num2str(im_num,'Stress%03.f') '.jpg'],'jpg');
-            fig3 = figure(fig3);
-            subplot(2,2,1); imagesc(Xc,Yc,DivSigXa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\nabla \cdot \sigma_{x}~Homogenized$','interpreter','latex','fontsize',16); colorbar; caxis([-0.7 0.7])
-            subplot(2,2,2); imagesc(Xc,Yc,DivSigYa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\nabla \cdot \sigma_{y}~Homogenized$','interpreter','latex','fontsize',16); colorbar; caxis([-0.7 0.7])
-            subplot(2,2,3); imagesc(Xc,Yc,DivSig1a); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\nabla \cdot \sigma_{x}~Momentum$','interpreter','latex','fontsize',16); colorbar; caxis([-0.7 0.7])
-            subplot(2,2,4); imagesc(Xc,Yc,DivSig2a); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\nabla \cdot \sigma_{y}~Momentum$','interpreter','latex','fontsize',16); colorbar; caxis([-0.7 0.7])
-            saveas(fig3,['./figs/' num2str(im_num,'DivStress%03.f') '.jpg'],'jpg');
-        end
-        
-%         if im_num > 60
-%             xx = 1;
-%             xx(1) =[1 2];
-%         end
     end
     
     FloeOld2 = FloeOld; FloeOld = Floe;
@@ -348,28 +258,12 @@ while im_num<500
         if mod(i_step,nDTpack)==0
             height.mean = 0.2;%h0;
             height.delta = 0;
-%             xx = 1; xx(1) =[1 2];
             [Floe,Vd] = pack_ice_new(Floe,c2_boundary,dhdt,Vd,target_concentration,ocean, height, min_floe_size, PERIODIC,3,3);
         end
-%         for ii = 1+Nb:length(Floe)
-%             h1 = Floe(ii).mass/(Floe(ii).area*rho_ice);
-%             if abs(Floe(ii).h -h1) > 0.05
-%                 xx = 1;
-%                 xx(1) = [1 2];
-%             end
-%         end
     end
     
     live = cat(1,Floe.alive);
-    Floe(live==0)=[]; 
-    h = cat(1,Floe.h); h2 = cat(1,FloeOld.h);
-    uice = cat(1,Floe.Ui); vice = cat(1,Floe.Vi);
-    if max(abs(uice)) >100 || max(abs(vice)) >100
-%    if sum(cat(1,Floe(h>0.1).area))/sum(cat(1,FloeOld(h2>0.1).area)) < 0.98
-        save('FloeF.mat','Floe','FloeOld')
-        %xx = 1; xx(1) =[1 2];
-    end
-    
+    Floe(live==0)=[];     
     if mod(i_step,nDTOut)==0
       save(['./FloesCom2/Floe' num2str(im_num,'%07.f') '.mat'],'Floe','eularian_data','SigXXa','SigXYa', 'SigYYa','DivSigXa','DivSigYa','DivSig1a','DivSig2a','U','dU','Fx','mass','c2_boundary_poly');
         SigXX = zeros(Ny, Nx); SigYX = zeros(Ny, Nx);
@@ -394,33 +288,11 @@ while im_num<500
     %Calculate forces and torques and intergrate forward
 %     tic
 
-    if sum(cat(1,Floe.area))/area(c2_boundary_poly)>1.05
-        %xx = 1; xx(1) = [1 2];
-    end
-    [Floe,dissolvedNEW] = floe_interactions_all(Floe, floebound, uright, 0, ocean, winds, c2_boundary, dt, HFo,min_floe_size, Nx,Ny,Nb, dissolvedNEW,doInt,COLLISION, PERIODIC, RIDGING, RAFTING);
-    h = cat(1,Floe.h); h2 = cat(1,FloeOld.h);
-    uice = cat(1,Floe.Ui); vice = cat(1,Floe.Vi);
-    if max(abs(uice)) >100 || max(abs(vice)) >100
-%    if sum(cat(1,Floe(h>0.1).area))/sum(cat(1,FloeOld(h2>0.1).area)) < 0.93
-        save('FloeF.mat','Floe','FloeOld')
-        xx = 1; xx(1) =[1 2];
-    end
-%     toc
-%     for ii =1:length(Floe)
-%         poly(ii) = polyshape(Floe(ii).c_alpha'+[Floe(ii).Xi Floe(ii).Yi]);
-%     end
-%     if abs(Floe(1).Fx)>0
-%         collide = 1;
-%     end
-
-
-%     if Time == 24620
-%         xx = 1; xx(1) =[1 2];
-%     end
+    
+    [Floe,dissolvedNEW] = floe_interactions_all(Floe, floebound, uright, 0, ocean, winds, c2_boundary, dt, HFo,min_floe_size, Nx,Ny,Nbound, dissolvedNEW,doInt,COLLISION, PERIODIC, RIDGING, RAFTING);
     
     if AVERAGE
-        %         [eularian_data] = calc_eulerian_stress(Floe,Nx,Ny,Nb,c2_boundary,dt,PERIODIC);
-        [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,c2_boundary,dt,PERIODIC);
+        [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nbound,c2_boundary,dt,PERIODIC);
         SigXX = SigXX+squeeze(eularian_data.stressxx); SigYX = SigYX+squeeze(eularian_data.stressyx);
         SigXY = SigXY+squeeze(eularian_data.stressxy); SigYY = SigYY+squeeze(eularian_data.stressyy);
         Eux = Eux+squeeze(eularian_data.strainux); Evx = Evx+squeeze(eularian_data.strainvx);
@@ -435,10 +307,6 @@ while im_num<500
         DivSigY = DivSigY+DSigY; DivSig2 = DivSig2+DSig2;
     end
     
-    if sum(cat(1,Floe.area))/area(c2_boundary_poly)>1.05
-        %xx = 1; xx(1) = [1 2];
-    end
-    
     FloeOld = Floe;
     if WELDING && mod(i_step,25)==0
         weldrate = 150;%Set rate at which floes will meld
@@ -449,159 +317,42 @@ while im_num<500
         FloeOld = Floe;
         if mod(i_step,5000)==0
             weldrate = 150;
-            Floe = Weld_Floes_par2(Floe,Nb,weldrate,c2_boundary,Amax/2,1,1);
+            Floe = Weld_Floes_par2(Floe,Nbound,weldrate,c2_boundary,Amax/2,1,1);
         elseif mod(i_step,500)==0
-            Floe = Weld_Floes_par2(Floe,Nb,weldrate,c2_boundary,Amax/3,2,2);
+            Floe = Weld_Floes_par2(Floe,Nbound,weldrate,c2_boundary,Amax/3,2,2);
         else
-            Floe = Weld_Floes_par2(Floe,Nb,weldrate,c2_boundary,Amax/3,3,3);
+            Floe = Weld_Floes_par2(Floe,Nbound,weldrate,c2_boundary,Amax/3,3,3);
         end
     end
-%    if WELDING && mod(i_step,7)==0
-%        weldrate = 75;%Set rate at which floes will meld
-%        A=cat(1,Floe.area);
-%        if max(A) > Amax
-%           Amax = max(A);
-%        end
-%        FloeOld = Floe;
-%        keep = zeros(1,length(Floe));
-%        keep(A>mean(A)/5)=1;
-%        keep(1:Nb) = ones(Nb,1);
-%        keep = logical(keep);
-%        Floe = Weld_Floes(Floe,Nb,weldrate,Amax,mean(A)/5);
-%        if ~isempty(FloesW)
-%            Floe=[Floe(keep) FloesW];
-%        end
-%    end
     live = cat(1,Floe.alive);
     Floe(live==0)=[]; 
-    h = cat(1,Floe.h); h2 = cat(1,FloeOld.h);
-    uice = cat(1,Floe.Ui); vice = cat(1,Floe.Vi);
-    if max(abs(uice)) >100 || max(abs(vice)) >100
-%    if sum(cat(1,Floe(h>0.1).area))/sum(cat(1,FloeOld(h2>0.1).area)) < 0.98
-        save('FloeF.mat','Floe','FloeOld')
-        xx = 1; xx(1) =[1 2];
-    end
-
-    if sum(cat(1,Floe.area))/area(c2_boundary_poly)>1.05
-        %xx = 1; xx(1) = [1 2];
-    end
 
     FloeOld = Floe;
     if FRACTURES && mod(i_step,50)==0 %&& im_num>150 
         compactness = sum(cat(1,Floe.area))/area(c2_boundary_poly);
-        [Floe,Princ] = FracMohr2(Floe,Nb,min_floe_size,compactness);
-%        save(['./FloesCom/PrincO' num2str(im_num,'%07.f') '.mat'],'Princ');
-%         clear Stress, clear A;
-%         for ii = 1:length(Floe)
-%             Stress(ii) = max(abs(eig(Floe(ii).Stress)));
-%             A(ii) = Floe(ii).area;
-%         end
-%         n = 6:0.5:ceil(max(log10(A)));
-%         BinEdges = 10.^n;
-%         for ii = 1:length(n)-1
-%             Stresses = Stress;
-%             Stresses(A<BinEdges(ii)) = nan; Stresses(A>BinEdges(ii+1)) = nan;
-%             Mstress = max(Stress(~isnan(Stresses)));
-%             Stress(~isnan(Stresses)) = Stress(~isnan(Stresses))/Mstress;
-%         end
-%         [B,TF] = rmoutliers(Stress);
-%         keep=rand(length(Floe),1)>Stress'/max(Stress(TF));
-%         keep=rand(length(Floe),1)<1.05-Stress'/max(Stress);
+        [Floe,Princ] = FracMohr2(Floe,Nbound,min_floe_size,compactness);
+
         overlapArea=cat(1,Floe.OverlapArea)./cat(1,Floe.area);
-%        keep=rand(length(Floe),1)>0.001;%2*overlapArea;
-%        keep=rand(length(Floe),1)>overlapArea;
         if KEEP_MIN
             keep(cat(1,Floe.area)<min_floe_size)=1;
         end
-%        keep(1:Nb) = ones(Nb,1);
-%        fracturedFloes=fracture_floe(Floe(~keep),3);
-% %         fracturedFloes=fracture_leads(Floe(~keep),Nx,Ny,c2_boundary,eularian_data);
-%        if ~isempty(fracturedFloes)
-%            Floe=[Floe(keep) fracturedFloes];
-%        end
-% %         for ii = 1+Nb:length(Floe)
-% %             h1 = Floe(ii).mass/(Floe(ii).area*rho_ice);
-% %             if abs(Floe(ii).h -h1) > 0.05
-% %                 xx = 1;
-% %                 xx(1) = [1 2];
-% %             end
-% %         end
-%         %         [Floe] = FracLeads(Floe,Ny,Nx,Nb,c2_boundary,eularian_data);
-%         %         [Floe] = FracIso(Floe,Ny,Nx,Nb,c2_boundary,SigO);
     end
     live = cat(1,Floe.alive);
     Floe(live==0)=[]; 
-    h = cat(1,Floe.h); h2 = cat(1,FloeOld.h);
-    uice = cat(1,Floe.Ui); vice = cat(1,Floe.Vi);
-    if max(abs(uice)) >100 || max(abs(vice)) >100
-    %if sum(cat(1,Floe(h>0.1).area))/sum(cat(1,FloeOld(h2>0.1).area)) < 0.98
-        save('FloeF.mat','Floe','FloeOld')
-        xx = 1; xx(1) =[1 2];
-    end
     
     if CORNERS && mod(i_step,10)==0
-%         clear Stress, clear A;
-%         for ii = 1:length(Floe)
-%             Stress(ii) = max(abs(eig(Floe(ii).Stress)));
-% %             A(ii) = Floe(ii).area;
-%         end
-%         [B,TF] = rmoutliers(Stress);
-%         if max(Stress) == 0
-%             keep = ones(length(Floe),1);
-%         elseif max(Stress(~TF))==0
-%             grind = rand(length(Floe),1)<2*Stress'/max(Stress);
-%             keep = ~grind;
-%         elseif max(Stress(~TF))<max(Stress(TF))
-%             keep=rand(length(Floe),1)<2*Stress'/max(Stress(~TF));
-%         else
-%             grind = rand(length(Floe),1)<2*Stress'/max(Stress);
-%             keep = ~grind;
-%         end
-%         n = 6:0.5:ceil(max(log10(A)));
-%         BinEdges = 10.^n;
-%         for ii = 1:length(n)-1
-%             Stresses = Stress;
-%             Stresses(A<BinEdges(ii)) = nan; Stresses(A>BinEdges(ii+1)) = nan;
-%             Mstress = max(Stress(~isnan(Stresses)));
-%             Stress(~isnan(Stresses)) = Stress(~isnan(Stresses))/Mstress;
-%         end
-%         for ii = 1+Nb:length(Floe)
-%             h1 = Floe(ii).mass/(Floe(ii).area*rho_ice);
-%             if abs(Floe(ii).h -h1) > 0.05
-%                 xx = 1;
-%                 xx(1) = [1 2];
-%             end
-%         end
-%         Floe2 = Floe;
-%         stress = zeros(length(Floe),1);
-%         for ii = 1:length(Floe)
-%             stress(ii) = trace(abs(Floe(ii).Stress));
-%         end
-%         if max(stress)>0
-%             stresses=stress/max(stress);
-%         else
-%             stresses = stress;
-%         end
-%         keep=stresses<4*rand(length(Floe),1);
-%         keep=rand(length(Floe),1)/2<1.05-Stress';
+
         keep = rand(length(Floe),1)>0.7;
-        keep(1:Nb) = ones(Nb,1);
+        keep(1:Nbound) = ones(Nbound,1);
         if KEEP_MIN
             keep(cat(1,Floe.area)<min_floe_size)=1;
         end
          overlapArea=cat(1,Floe.OverlapArea)./cat(1,Floe.area);
          keep(overlapArea>0.15) = 0;
-        fracturedFloes=corners(Floe(~keep),Nb);
+        fracturedFloes=corners(Floe(~keep),Nbound);
         if ~isempty(fracturedFloes)
             Floe=[Floe(keep) fracturedFloes];
         end
-%         for ii = 1+Nb:length(Floe)
-%             h1 = Floe(ii).mass/(Floe(ii).area*rho_ice);
-%             if abs(Floe(ii).h -h1) > 0.05
-%                 xx = 1;
-%                 xx(1) = [1 2];
-%             end
-%         end
     end   
     
     
@@ -610,7 +361,6 @@ while im_num<500
     if ~KEEP_MIN
         dissolvedNEW = calc_dissolved_mass(Floe(Area<min_floe_size),Nx,Ny,c2_boundary_poly)+dissolvedNEW;
     end
-%     Vdnew = Advect_Dissolved_Ice(Vd,coarseMean,im_num,dissolvedNEW,c2_boundary,dt);
     Vdnew = Vd(:,:,1)+dissolvedNEW;
     dissolvedNEW=zeros(Ny,Nx);
     Vd(:,:,2) = Vd(:,:,1);
@@ -629,14 +379,10 @@ while im_num<500
     end
     
     Time=Time+dt; i_step=i_step+1; %update time index
-%     x=[-1 -1 1 (1-0.1*Time*f/pi*cos(f*Time)) -1]*Lx;
     if i_step < 750 %&& mod(i_step,10)==0 
         xb = c2_boundary(1,:);
         yb = c2_boundary(2,:);
-        yb = yb - 4*[-1 1 1 -1 -1];%     y=[-1 1 1 (-1-0.1*Time*f/pi*sin(f*Time)) -1]*Ly;
-        %     xb = xb + [1 1 -1 -1 1];
-        %    Ly = max(y); %Lx = area(c2_boundary_poly)/(4*Ly);
-        %   x=[-1 -1 1 1 -1]*Lx;
+        yb = yb - 4*[-1 1 1 -1 -1];
         c2_boundary = [xb; yb];
         Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
         c2_boundary_poly = polyshape(c2_boundary');
@@ -646,8 +392,5 @@ while im_num<500
     
 end
 
-% xx = 1; xx(1) =[1 2];
-
-% clear Modulus
 tEnd = toc(tStart)
 %%

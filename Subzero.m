@@ -146,7 +146,7 @@ nDT=nDTOut*nSnapshots; %Total number of time steps
 
 nSimp = 20;
 
-nPar = 16; %Number of workers for parfor
+nPar = 6; %Number of workers for parfor
 poolobj = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(poolobj)
     parpool(nPar);
@@ -369,7 +369,7 @@ while side < 2.5
     
     
     if mod(i_step,nDTOut)==0
-        save(['/dat1/egonzalez/floes_OG_shape_2/Floe' num2str(im_num,'%07.f') '.mat'],'Floe','Nb','Nbond','eularian_data','SigXXa','SigXYa', 'SigYYa','U','dU','Fx','mass','c2_boundary');
+        save(['./FloesOut/Floe' num2str(im_num,'%07.f') '.mat'],'Floe','Nb','Nbond','eularian_data','SigXXa','SigXYa', 'SigYYa','U','dU','Fx','mass','c2_boundary');
         SigXX = zeros(Ny, Nx); SigYX = zeros(Ny, Nx);
         SigXY = zeros(Ny, Nx); SigYY = zeros(Ny, Nx);
         DivSigX = zeros(Ny, Nx); DivSig1 = zeros(Ny, Nx);
@@ -389,8 +389,7 @@ while side < 2.5
     
     %Calculate forces and torques and intergrate forward
     [Floe,dissolvedNEW] = floe_interactions_all(Floe,floebound, uright, 0, ocean, winds, c2_boundary, dt, HFo,min_floe_size, Nx,Ny,Nb, dissolvedNEW,doInt,COLLISION, PERIODIC, RIDGING, RAFTING);
-%     Areas = cat(1,Floe.area);
-%     Nbond = length(Areas(Areas<bond_area+1));
+
     
     if AVERAGE
         [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
