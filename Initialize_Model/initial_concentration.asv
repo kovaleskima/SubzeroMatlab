@@ -99,7 +99,7 @@ for jj = 1:Ny
                 end
 
                 polyFloes = poly;
-            for kk= 1:length(polyFloes)
+                for kk= 1:length(polyFloes)
                     polyFloesNew = polyFloes(kk);
                     bond_tmp = bonds(kk).bond;
                     new_bnds = [];
@@ -122,8 +122,7 @@ for jj = 1:Ny
                         new_bnds=rmfield(new_bnds,{'c'});
                         floenew.bonds = new_bnds;
                     Floe = [Floe floenew];
-                    end
-            end
+                end
             end
         end
     end
