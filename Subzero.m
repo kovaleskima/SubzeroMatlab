@@ -146,7 +146,7 @@ nDT=nDTOut*nSnapshots; %Total number of time steps
 
 nSimp = 20;
 
-nPar = 6; %Number of workers for parfor
+nPar = 1; %Number of workers for parfor
 poolobj = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(poolobj)
     parpool(nPar);

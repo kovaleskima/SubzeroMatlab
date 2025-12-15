@@ -12,10 +12,9 @@
 # commands
 module load matlab
 
-echo "Running SubzeroCompress2"
-matlab -batch "SubzeroCompress2"
-mv Floes_bnds2/figs/ ./figs_SubzeroCompress2/
-echo "Completed SubzeroCompress2"
+echo "Running Subzero"
+matlab -batch "Subzero"
+echo "Subzero run is complete"
 
 # Script explanation:
 # 1. load matlab module
