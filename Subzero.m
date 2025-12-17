@@ -86,34 +86,12 @@ for ii = 1:length(Floe)
         end
     end
 end
-%Floe(1).Ui = 0.5; %Floe(2).Ui = -0.5;
-%Floe(1).Vi = 0.1; Floe(2).Vi = -0.5;
-% Floe(1).ksi_ice = 0.01; Floe(2).ksi_ice = 0;
-% Floe(2) = [];
-% save('Floe0.mat','Floe','Nb','Nbond');
-% xx = 1; xx(1) =[1 2];
-% Floe0 = Floe;
-% save('Floe0.mat','Floe0');
-%load('./Floes_bnds/Floe0000001.mat','Floe','Nbond','Nb');
-% for jj = 1+Nbond:length(Floe)
-%     BondNum = Floe(jj).bonds.BondNum;
-%     if ~isempty(Floe(jj).bonds.poly)
-%         R = regions(polyshape(Floe(jj).bonds.poly));
-%         if ~(length(R)==length(BondNum))
-%             xx = 1; xx(1) =[1 2];
-%         end
-%     end
-% end
 
 if isfield(Floe,'poly')
     Floe=rmfield(Floe,{'poly'});
 end
-% Floe = Floe(Nbond+1:end);
-min_floe_size = (4*Lx*Ly-sum(cat(1,Floe(1:Nb).area)))/20000; %define minimum floe size that can exist during model run
 
-% load Floe0; Nbond = 1;
-% Floe(2).Ui = 0.15;
-% Floe(3).Ui = -0.15;
+min_floe_size = (4*Lx*Ly-sum(cat(1,Floe(1:Nb).area)))/20000; %define minimum floe size that can exist during model run
 
 Ly = max(c2_boundary(2,:));Lx = 1.25*max(c2_boundary(1,:));
 c2_boundary =[-Lx -Lx Lx Lx; -Ly Ly Ly -Ly];
@@ -134,19 +112,19 @@ end
 L_mean = median(L);
 save('Modulus.mat','Modulus','r_mean','L_mean');
 
-%%
+%% RUN FOR 10 STEPS AND THEN STOP
 
 dhdt = 1; %Set to 1 for ice to grow in thickness over time
 
-nDTOut=150; %Output frequency (in number of time steps)
+nDTOut=10; %Output frequency (in number of time steps)
 
-nSnapshots=800; %Total number of model snapshots to save
+nSnapshots=1; %Total number of model snapshots to save
 
 nDT=nDTOut*nSnapshots; %Total number of time steps
 
 nSimp = 20;
 
-nPar = 16; %Number of workers for parfor
+nPar = 8; %Number of workers for parfor
 poolobj = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(poolobj)
     parpool(nPar);
@@ -208,18 +186,7 @@ if ~exist('Time','var')
     fig2=figure('Position',[100 100 1000 500],'visible','on');
     fig3 = figure;
 end
-% im_num=51;
-% load(['./Floes_bnds2/Floe' num2str(im_num,'%07.f') '.mat'],'Floe','c2_boundary');
-% i_step = (im_num-1)*nDTOut;
-% xb = c2_boundary(1,:);
-% yb = c2_boundary(2,:);
-% % yb = yb - 2.5*[-1 1 1 -1];
-% % c2_boundary = [xb; yb];
-% Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
-% c2_boundary_poly = polyshape(c2_boundary');
-% c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
-% floebound = initialize_floe_values(c2_border, height, 1);
-% Time = i_step*dt;
+
 %% Solving for floe trajectories
 tic; 
 while side < 2.5
@@ -298,7 +265,6 @@ while side < 2.5
         [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
         if ifPlot
             [fig] =plot_basic_bonds(fig,Floe,ocean,c2_boundary_poly,Nb,Nbond,PERIODIC);
-%            [fig] =plot_basic(fig, Time,Floe,ocean,c2_boundary_poly,Nb,PERIODIC);
             exportgraphics(fig,['./figs/' num2str(im_num,'%03.f') '.jpg']);
         end
         
@@ -326,35 +292,6 @@ while side < 2.5
             dU = dU+squeeze(eularian_data.du);dV = dV+squeeze(eularian_data.dv);
             Fx = Fx+squeeze(eularian_data.force_x);Fy = Fy+squeeze(eularian_data.force_x);
             Sig = Sig+squeeze(eularian_data.stress);
-        end
-        
-                
-        if ifPlotStress
-            [fig] =plot_basic_stress(fig, Time,Floe,ocean,c2_boundary_poly,Nb,bonds);
-            saveas(fig,['./Floes_bnds2/figs/' num2str(im_num,'%03.f') '.jpg'],'jpg');
-%             figure(2)
-%             plot(Xc,SigXXa,'kx','linewidth',2); title(['Time = ' num2str(Time/3600) ' hours'],'fontsize',24);
-            drawnow
-        end
-        
-        if ifPlotStressStrain
-            fig2 = figure(fig2);
-            SigO = Sig;
-            subplot(2,4,1); imagesc(Xc,Yc,SigXXa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\sigma_{xx}$','interpreter','latex','fontsize',16); colorbar; caxis([-1e6 1e6])
-            subplot(2,4,2); imagesc(Xc,Yc,SigYXa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\sigma_{yx}$','interpreter','latex','fontsize',16); colorbar; caxis([-1e6 1e6])
-            subplot(2,4,5); imagesc(Xc,Yc,SigXYa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\sigma_{xy}$','interpreter','latex','fontsize',16); colorbar; caxis([-1e6 1e6])
-            subplot(2,4,6); imagesc(Xc,Yc,SigYYa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\sigma_{yy}$','interpreter','latex','fontsize',16); colorbar; caxis([-1e6 1e6])
-            subplot(2,4,3); imagesc(Xc,Yc,Eux); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$E_{11}$','interpreter','latex','fontsize',16); colorbar; caxis([-5e-6 5e-6])
-            subplot(2,4,4); imagesc(Xc,Yc,Evx); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$E_{21}$','interpreter','latex','fontsize',16); colorbar; caxis([-5e-6 5e-6])
-            subplot(2,4,7); imagesc(Xc,Yc,Euy); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$E_{12}$','interpreter','latex','fontsize',16); colorbar; caxis([-5e-6 5e-6])
-            subplot(2,4,8); imagesc(Xc,Yc,Evy); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$E_{22}$','interpreter','latex','fontsize',16); colorbar; caxis([-5e-6 5e-6])
-            saveas(fig2,['./figs/' num2str(im_num,'Stress%03.f') '.jpg'],'jpg');
-            fig3 = figure(fig3);
-            subplot(2,2,1); imagesc(Xc,Yc,DivSigXa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\nabla \cdot \sigma_{x}~Homogenized$','interpreter','latex','fontsize',16); colorbar; caxis([-0.7 0.7])
-            subplot(2,2,2); imagesc(Xc,Yc,DivSigYa); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\nabla \cdot \sigma_{y}~Homogenized$','interpreter','latex','fontsize',16); colorbar; caxis([-0.7 0.7])
-            subplot(2,2,3); imagesc(Xc,Yc,DivSig1a); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\nabla \cdot \sigma_{x}~Momentum$','interpreter','latex','fontsize',16); colorbar; caxis([-0.7 0.7])
-            subplot(2,2,4); imagesc(Xc,Yc,DivSig2a); hold on; quiver(Xc,Yc,U*1e6,V*1e6,'k','autoscale','on'); set(gca,'YDir','normal','DataAspectRatio',[1 1 1]); title('$\nabla \cdot \sigma_{y}~Momentum$','interpreter','latex','fontsize',16); colorbar; caxis([-0.7 0.7])
-            saveas(fig3,['./figs/' num2str(im_num,'DivStress%03.f') '.jpg'],'jpg');
         end
         
     end
@@ -389,8 +326,6 @@ while side < 2.5
     
     %Calculate forces and torques and intergrate forward
     [Floe,dissolvedNEW] = floe_interactions_all(Floe,floebound, uright, 0, ocean, winds, c2_boundary, dt, HFo,min_floe_size, Nx,Ny,Nb, dissolvedNEW,doInt,COLLISION, PERIODIC, RIDGING, RAFTING);
-%     Areas = cat(1,Floe.area);
-%     Nbond = length(Areas(Areas<bond_area+1));
     
     if AVERAGE
         [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
@@ -427,20 +362,8 @@ while side < 2.5
 
 
     if FRACTURES && mod(i_step,50)==0 %&& im_num > 40
-%         for ii = 1:length(bonds)
-%             for jj = 1:length(bonds(ii).bond)
-%                 bonds(ii).bond(jj).Stress = bonds(ii).bond(jj).Stress/250;
-%             end
-%         end
         compactness = sum(cat(1,Floe.area))/area(c2_boundary_poly);
-%        yb = c2_boundary(2,:);
-%        if max(yb) <= 49000
-%            save('FloeFail.mat','Floe','Nb','min_floe_size','compactness');
-%            xx = 1; xx(1) =[1 2];
-%        end
         [Floe,Princ] = FracMohr(Floe,Nb,min_floe_size,compactness);
-%         Areas = cat(1,Floe.area);
-%         Nbond = length(Areas(Areas<bond_area+1));
     end
  
     if CORNERS && mod(i_step,10)==0
@@ -463,7 +386,6 @@ while side < 2.5
     if ~KEEP_MIN
         dissolvedNEW = calc_dissolved_mass(Floe(Area<min_floe_size),Nx,Ny,c2_boundary_poly)+dissolvedNEW;
     end
-%     Vdnew = Advect_Dissolved_Ice(Vd,coarseMean,im_num,dissolvedNEW,c2_boundary,dt);
     Vdnew = Vd(:,:,1)+dissolvedNEW;
     dissolvedNEW=zeros(Ny,Nx);
     Vd(:,:,2) = Vd(:,:,1);
@@ -481,10 +403,7 @@ while side < 2.5
         xb = c2_boundary(1,:);
         yb = c2_boundary(2,:);
         xb = xb + 2.5*[-1 -1 1 1];
-        yb = yb - 2.5*[-1 1 1 -1];%     y=[-1 1 1 (-1-0.1*Time*f/pi*sin(f*Time)) -1]*Ly;
-        %     xb = xb + [1 1 -1 -1 1];
-        %    Ly = max(y); %Lx = area(c2_boundary_poly)/(4*Ly);
-        %   x=[-1 -1 1 1 -1]*Lx;
+        yb = yb - 2.5*[-1 1 1 -1];
         c2_boundary = [xb; yb];
         Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
         c2_boundary_poly = polyshape(c2_boundary');
@@ -507,10 +426,7 @@ while side < 2.5
         xb = c2_boundary(1,:);
         yb = c2_boundary(2,:);
         xb = xb - 2.5*[-1 -1 1 1];
-        yb = yb + 2.5*[-1 1 1 -1];%     y=[-1 1 1 (-1-0.1*Time*f/pi*sin(f*Time)) -1]*Ly;
-        %     xb = xb + [1 1 -1 -1 1];
-        %    Ly = max(y); %Lx = area(c2_boundary_poly)/(4*Ly);
-        %   x=[-1 -1 1 1 -1]*Lx;
+        yb = yb + 2.5*[-1 1 1 -1];
         c2_boundary = [xb; yb];
         Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
         c2_boundary_poly = polyshape(c2_boundary');
