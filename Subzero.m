@@ -26,12 +26,6 @@ SIMPLIFY = false;
 
 ifPlot = false; %Plot floe figures or not?
 
-ifPlotStress = false;
-
-ifPlotStressStrain = false;
-
-justfrac = false;
-
 %% Initialize model vars
 
 %add paths
@@ -124,7 +118,7 @@ nDT=nDTOut*nSnapshots; %Total number of time steps
 
 nSimp = 20;
 
-nPar = 8; %Number of workers for parfor
+nPar = 1; %Number of workers for parfor
 poolobj = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(poolobj)
     parpool(nPar);
@@ -175,8 +169,9 @@ Amax = max(A);
 
 
 %% Initialize time and other stuff to zero
-if isempty(dir('Floes_bnds2')); disp('Creating folder: Floes_bnds2'); mkdir('Floes_bnds2'); end
-if isempty(dir('./Floes_bnds2/figs')); disp('Creating folder: figs'); mkdir('./Floes_bnds2/figs'); end
+if isempty(dir('FloesOut')); disp('Creating folder: FloesOut'); mkdir('FloesOut'); end
+if isempty(dir('./FloesOut/figs')); disp('Creating folder: figs'); mkdir('./FloesOut/figs'); end
+if isempty(dir('./FloesOUt/Floes')); disp('Creating folder: Floes'); mkdir('./FloesOut/Floes'); end
 
 if ~exist('Time','var')
     Time=0;
@@ -265,7 +260,7 @@ while side < 2.5
         [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
         if ifPlot
             [fig] =plot_basic_bonds(fig,Floe,ocean,c2_boundary_poly,Nb,Nbond,PERIODIC);
-            exportgraphics(fig,['./figs/' num2str(im_num,'%03.f') '.jpg']);
+            exportgraphics(fig,['./FloesOut/figs/' num2str(im_num,'%03.f') '.jpg']);
         end
         
 
@@ -305,24 +300,6 @@ while side < 2.5
     end
     
     
-    if mod(i_step,nDTOut)==0
-        save(['/dat1/egonzalez/floes_OG_shape_2/Floe' num2str(im_num,'%07.f') '.mat'],'Floe','Nb','Nbond','eularian_data','SigXXa','SigXYa', 'SigYYa','U','dU','Fx','mass','c2_boundary');
-        SigXX = zeros(Ny, Nx); SigYX = zeros(Ny, Nx);
-        SigXY = zeros(Ny, Nx); SigYY = zeros(Ny, Nx);
-        DivSigX = zeros(Ny, Nx); DivSig1 = zeros(Ny, Nx);
-        DivSigY = zeros(Ny, Nx); DivSig2 = zeros(Ny, Nx);
-        Eux = zeros(Ny, Nx); Evx = zeros(Ny, Nx);
-        Euy = zeros(Ny, Nx); Evy = zeros(Ny, Nx);
-        U = zeros(Ny, Nx); V = zeros(Ny, Nx);
-        dU = zeros(Ny, Nx); dV = zeros(Ny, Nx);
-        Fx = zeros(Ny, Nx); Fy = zeros(Ny, Nx);
-        Sig = zeros(Ny, Nx); mass = zeros(Ny, Nx);
-        
-        M = cat(1,Floe.mass);
-        Mtot(im_num) = sum(M)+sum(Vdnew(:));
-        
-        im_num=im_num+1;  %image number for saving data and coarse vars;
-    end
     
     %Calculate forces and torques and intergrate forward
     [Floe,dissolvedNEW] = floe_interactions_all(Floe,floebound, uright, 0, ocean, winds, c2_boundary, dt, HFo,min_floe_size, Nx,Ny,Nb, dissolvedNEW,doInt,COLLISION, PERIODIC, RIDGING, RAFTING);
