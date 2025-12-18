@@ -24,7 +24,7 @@ KEEP_MIN = true;
 
 SIMPLIFY = false;
 
-ifPlot = false; %Plot floe figures or not?
+PLOT = true; %Plot floe figures or not?
 
 %% Initialize model vars
 
@@ -58,28 +58,16 @@ min_floe_size = 2*Lx*Ly/10000;% Define the minimum floe size you want in initial
 
 %Initialize Floe state
 target_concentration = 1;
-%[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,1500,1,min_floe_size);
-%save('FloeInit.mat','Floe','bonds','Nbond','Nb');
-load FloeInit2
-%load('./Floes_bnds2/Floe0000001.mat','Floe','Nbond','Nb');
+[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,100,1,min_floe_size);
+
+% DEBUG OUTPUT %
+fig = figure;
+[fig] = plot_basic_bonds(fig,Floe,ocean,c2_boundary_poly,Nb,Nbond,PERIODIC);
+exportgraphics(fig,'./FloesOut/figs/init.jpg');
+save('FloesOut/FloeInit.mat','Floe','bonds','Nbond','Nb');
+% END %
+
 Floe0 = Floe;
-Nums = cat(1,Floe.num);
-for ii = 1:length(Floe)
-    floe = Floe(ii);
-    bnds = unique(cat(1,Floe(ii).bonds.Num));
-    bonds1 = cat(1,Floe(ii).bonds.Num);
-    for jj = 1:length(bnds)
-        Lia = ismember(Nums,bnds(jj)); floe2 = Floe(Lia); floeNum = floe2.num;
-        Num1 = sum(ismember(bonds1,floeNum)); BondNum2 = cat(1,floe2.bonds.Num); Num2 = sum(ismember(BondNum2,Floe(ii).num));
-        if ~Num1
-            xx = 1; xx(1) =[1 2];
-        elseif ~Num2
-            xx = 1; xx(1) =[1 2];
-        elseif sum(Num1)~=sum(Num2)
-            xx = 1; xx(1) =[1 2];
-        end
-    end
-end
 
 if isfield(Floe,'poly')
     Floe=rmfield(Floe,{'poly'});
@@ -110,15 +98,15 @@ save('Modulus.mat','Modulus','r_mean','L_mean');
 
 dhdt = 1; %Set to 1 for ice to grow in thickness over time
 
-nDTOut=10; %Output frequency (in number of time steps)
+nDTOut=1; %Output frequency (in number of time steps)
 
-nSnapshots=1; %Total number of model snapshots to save
+nSnapshots=10; %Total number of model snapshots to save
 
 nDT=nDTOut*nSnapshots; %Total number of time steps
 
 nSimp = 20;
 
-nPar = 1; %Number of workers for parfor
+nPar = 6; %Number of workers for parfor
 poolobj = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(poolobj)
     parpool(nPar);
@@ -171,7 +159,7 @@ Amax = max(A);
 %% Initialize time and other stuff to zero
 if isempty(dir('FloesOut')); disp('Creating folder: FloesOut'); mkdir('FloesOut'); end
 if isempty(dir('./FloesOut/figs')); disp('Creating folder: figs'); mkdir('./FloesOut/figs'); end
-if isempty(dir('./FloesOUt/Floes')); disp('Creating folder: Floes'); mkdir('./FloesOut/Floes'); end
+if isempty(dir('./FloesOut/Floes')); disp('Creating folder: Floes'); mkdir('./FloesOut/Floes'); end
 
 if ~exist('Time','var')
     Time=0;
@@ -258,9 +246,11 @@ while side < 2.5
         
 
         [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
-        if ifPlot
+        if PLOT
+            fig = figure;
             [fig] =plot_basic_bonds(fig,Floe,ocean,c2_boundary_poly,Nb,Nbond,PERIODIC);
-            exportgraphics(fig,['./FloesOut/figs/' num2str(im_num,'%03.f') '.jpg']);
+            exportgraphics(fig,['./FloesOut/figs/fig' num2str(im_num,'%03.f') '.jpg']);
+            save(['./FloesOut/Floes/Floe' num2str(im_num, '%03.f') '.mat'], 'Floe', 'bonds', 'Nbond', 'Nb');
         end
         
 

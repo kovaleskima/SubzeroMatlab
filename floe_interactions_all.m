@@ -6,7 +6,6 @@ id3 ='MATLAB:polyshape:boundary3Points';
 warning('off',id3)
 rho_ice=920;
 global Modulus r_mean L_mean 
-% d = sqrt(bond_area);
 
 Lx= max(c2_boundary(1,:));
 Ly= max(c2_boundary(2,:));
@@ -103,46 +102,19 @@ for i=1+Nb:N  %do interactions with boundary in a separate parfor loop
                 Floe(i).potentialInteractions(k).Yi=y(j);
                 Floe(i).potentialInteractions(k).ksi_ice = ksi(j);
                 Floe(i).potentialInteractions(k).alpha=Floe(j).alpha_i;
-%                 Floe(i).potentialInteractions(k).bonds = cat(1,bonds(i).bond.Num);
                 Floe(i).potentialInteractions(k).bonds = Floe(j).bonds;
                 k=k+1;
             end
             
         end
-        
-%         A_rot=[cos(Floe(i).alpha_i) -sin(Floe(i).alpha_i); sin(Floe(i).alpha_i) cos(Floe(i).alpha_i)]; %rotation matrix
-%         for ii = 1:length(bonds(i).bond)
-% %             if bonds(i).bond(ii).piece
-%                 bonds(i).bond(ii).h = Floe(i).h;
-% %             else
-% %                 bonds(i).bond(ii).h = Floe(bonds(i).bond(ii).Num).h;
-% %             end
-%             bonds(i).bond(ii).Ui = u(i);
-%             bonds(i).bond(ii).Xi = x(i);
-%             bonds(i).bond(ii).Vi = v(i);
-%             bonds(i).bond(ii).Yi = y(i);
-% %             vel_bond = ([u(i) v(i)]+ ksi(i)*([bonds(i).bond(ii).Xb bonds(i).bond(ii).Yb]-[x(i) y(i)]));
-% %             Stress = [bonds(i).bond(ii).Ub-vel_bond(1) bonds(i).bond(ii).Ub-vel_bond(1)]/dt * rho_ice *bonds(i).bond(ii).area/d;
-% %             bonds(i).bond(ii).Stress = bonds(i).bond(ii).Stress+Stress;
-% %             bonds(i).bond(ii).Ub = vel_bond(1); bonds(i).bond(ii).Vb = vel_bond(2);
-%             c0 = [bonds(i).bond(ii).c(:,1)'- bonds(i).bond(ii).Xb; bonds(i).bond(ii).c(:,2)'- bonds(i).bond(ii).Yb];
-%             c_alpha=A_rot*c0;
-%             bonds(i).bond(ii).c_alpha = [c_alpha(1,:)+bonds(i).bond(ii).Xb;c_alpha(2,:)+bonds(i).bond(ii).Yb];
-%             bonds(i).bond(ii).ksi_ice = ksi(i);
-%             
-%         end
-        
     end
 end
 
 kill = zeros(1,N0); transfer = kill;
-% xx = 1; xx(1) =[1 2];
-%for i=1+Nb:N  %now the interactions could be calculated in a parfor loop!
 parfor i=1+Nb:N  %now the interactions could be calculated in a parfor loop!
 
 
     c1=[Floe(i).c_alpha(1,:)+x(i); Floe(i).c_alpha(2,:)+y(i)];
-%     bondNums = cat(1,bonds(i).bond.Num);
     if ~isempty(Floe(i).potentialInteractions)
         
         for k=1:length(Floe(i).potentialInteractions)
@@ -163,18 +135,6 @@ parfor i=1+Nb:N  %now the interactions could be calculated in a parfor loop!
                 end
             end
             
-%             Lia = ismember(bondNums,Floe(i).potentialInteractions(k).Num);
-%             if sum(Lia)>0 && sum(abs(force_j(:)))~=0
-%                 [force_j,P_j, overlap] = floe_interactions_poly_con2(bonds(i).bond(Lia),Floe(i).potentialInteractions(k),c2_boundary,PERIODIC,Modulus,dt,r_mean, r_bond);
-% 
-%                 if sum(abs(force_j(:)))~=0
-%                     Floe(i).interactions=[Floe(i).interactions ; floeNum*ones(size(force_j,1),1) force_j P_j zeros(size(force_j,1),1) overlap'];
-%                     Floe(i).OverlapArea = sum(overlap)+Floe(i).OverlapArea;
-%                     P_j = [P_j(:,1)-bonds(i).bond(Lia).Xb-x(i) P_j(:,2)-bonds(i).bond(Lia).Yb-y(i)];
-%                     bonds(i).bond(Lia).interactions=[floeNum*ones(size(force_j,1),1) force_j P_j zeros(size(force_j,1),1) overlap'];
-%                 end
-%             end
-            
         end
         
     end
@@ -185,7 +145,6 @@ parfor i=1+Nb:N  %now the interactions could be calculated in a parfor loop!
             Floe(i).alive = 0;
         end
         
-%     if ~worked, display(['contact points issue for (' num2str(i) ', boundary)' ]); end
         if sum(abs(force_b(:)))~=0
             [mm,~] = size(P_j);
             for ii =1:mm
@@ -193,7 +152,6 @@ parfor i=1+Nb:N  %now the interactions could be calculated in a parfor loop!
                     force_b(ii,1) = 0;
                 end
             end
-            % boundary will be recorded as floe number Inf;
             Floe(i).interactions=[Floe(i).interactions ; Inf*ones(size(force_b,1),1) force_b P_j zeros(size(force_b,1),1) overlap'];
             Floe(i).OverlapArea = sum(overlap)+Floe(i).OverlapArea;
             Floe(i).potentialInteractions(end+1).floeNum = Inf;
@@ -230,15 +188,6 @@ for i=1:N %this has to be done sequentially
             if indx(j)<=N && indx(j)>i
                 Floe(indx(j)).interactions=[Floe(indx(j)).interactions; i -a(j,2:3) a(j,4:5) 0 a(j,7)];   % 0 is torque here that is to be calculated below
                 Floe(indx(j)).OverlapArea = Floe(indx(j)).OverlapArea + a(j,7);
-%                 m = size(Floe(indx(j)).potentialInteractions,2);
-%                 Floe(indx(j)).potentialInteractions(m+1).floeNum=i;
-%                 Floe(indx(j)).potentialInteractions(m+1).c=[Floe(i).c_alpha(1,:)+x(i); Floe(i).c_alpha(2,:)+y(i)];
-%                 Floe(indx(j)).potentialInteractions(m+1).Ui=Floe(i).Ui;
-%                 Floe(indx(j)).potentialInteractions(m+1).Vi=Floe(i).Vi;
-%                 Floe(indx(j)).potentialInteractions(m+1).Xi=x(i);
-%                 Floe(indx(j)).potentialInteractions(m+1).Yi=y(i);
-%                 Floe(indx(j)).potentialInteractions(m+1).alpha=Floe(i).alpha_i;
-%                 Floe(indx(j)).potentialInteractions(m+1).ksi_ice = Floe(i).ksi_ice;
             end
             
         end
@@ -313,100 +262,6 @@ for i=1+Nb:N0
         if (isempty(tmp) || isnan(x(i)) ), kill(i)=i;xx = 1; xx(1) =[1 2]; elseif frac == 1, keep(i) = 0; else; Floe(i)=tmp; Floe(i).Fx = Fx; Floe(i).Fy = Fy; end
     end
 end
-
-
-% nums = cat(1,Floe.num);
-% bond0 = bonds;
-% parfor ii = 1:length(bonds)
-%     for jj = 1:length(bonds(ii).bond)
-%         if ~isempty(bonds(ii).bond(jj).interactions)
-%             Lia = ismember(nums,bonds(ii).bond(jj).Num);
-%             bnd_tmp = bond0(Lia).bond;
-%             bond_num = cat(1,bnd_tmp.Num);
-%             Lia2 = ismember(bond_num,nums(ii));
-%             a=bonds(ii).bond(jj).interactions;
-%             a2 = bnd_tmp(Lia2).interactions;
-%             a = [a; a2];
-%             r=[bonds(ii).bond(jj).Xi bonds(ii).bond(jj).Yi];
-%             Stress =1/(2*bonds(ii).bond(jj).area*bonds(ii).bond(jj).h)*([sum((a(:,4)-r(1)).*a(:,2)) sum((a(:,5)-r(2)).*a(:,2)); sum((a(:,4)-r(1)).*a(:,3)) sum((a(:,5)-r(2)).*a(:,3))]...
-%                 +[sum(a(:,2).*(a(:,4)-r(1))) sum(a(:,3).*(a(:,4)-r(1))); sum(a(:,2).*(a(:,5)-r(2))) sum(a(:,3).*(a(:,5)-r(2)))]);
-%             bonds(ii).bond(jj).Stress = bonds(ii).bond(jj).Stress+Stress;
-%         end
-%     end
-% end
-
-% Areas = cat(1,Floe.area);
-% Nbond = length(Areas(Areas<bond_area+1));
-% for ii = 1:Nbond
-%     if Floe(ii).bonds.interactions >10
-%         Floe(ii).alive = 0;
-%         Fnum = Floe(ii).bonds.FloeNum;
-%         Nums = cat(1,Floe.num);
-%         Numbers = [1:length(Floe)]';
-%         for jj = 1:length(Fnum)
-%             kk = Numbers(Nums==Fnum(jj));
-%             BondNum = Floe(kk).bonds.BondNum;
-%             clear R
-%             for iii = 1:length(Floe(kk).bonds.poly)
-%                 R(iii) = polyshape(Floe(kk).bonds.poly{iii});%regions(polyshape(floenew.bonds.poly));
-%             end
-%             polynew = polyshape(Floe(kk).c0');
-%             poly = union(polynew,R(BondNum==Floe(ii).num)); %Fix that this is not ii but needs to be FloeNumber field
-%             if poly.NumRegions > 1
-%                 [k,dist] = dsearchn(R(BondNum==Floe(ii).num).Vertices,polynew.Vertices);
-%                 for iii = 1:length(dist)
-%                     if dist(iii) < 1
-%                         polynew.Vertices(iii,:) = R(BondNum==Floe(ii).num).Vertices(k(iii),:);
-%                     end
-%                 end
-%                 poly = union(polynew,R(BondNum==Floe(ii).num)); %Fix that this is not ii but needs to be FloeNumber field
-%                 if poly.NumRegions > 1
-%                     xx = 1; xx(1) =[1 2];
-%                 end
-%             end
-%             if poly.NumHoles > 0
-%                 poly = rmholes(poly);
-%             end
-%             mass = area(R(BondNum==Floe(ii).num))*rho_ice*Floe(ii).h;
-%             if ~isempty(R)
-%                 if ~(length(R)==length(BondNum))
-%                     xx = 1; xx(1) =[1 2];
-%                 end
-%             end
-%             R(BondNum==Floe(ii).num) = []; BondNum(BondNum==Floe(ii).num) = [];
-%             Floe(kk).bonds.BondNum = BondNum;
-%             if ~isempty(R)
-%                 Verts = {};
-%                 for iii = 1:length(R)
-%                     Verts{iii} = R(iii).Vertices;
-%                 end
-%                 Floe(kk).bonds.poly = Verts;
-% %                 pbnd = union(R); Floe(kk).bonds.poly = pbnd.Vertices;
-%                 if ~(length(R)==length(BondNum))
-%                     xx = 1; xx(1) =[1 2];
-%                 end
-%             else
-%                 Floe(kk).bonds.poly = [];
-%             end
-%             [Xi_new,Yi_new] = centroid(poly);
-%             pold = polyshape(Floe(kk).c0'); [Xi_old,Yi_old] = centroid(pold);
-%             dx = Xi_new-Xi_old; dy = Yi_new-Yi_old;
-%             Floe(kk).Xi = Floe(kk).Xi+dx; Floe(kk).Yi = Floe(kk).Yi+dy;
-%             Floe(kk).area = area(poly);
-%             Floe(kk).mass = Floe(kk).mass+mass;
-%             Floe(kk).h = Floe(kk).mass/(rho_ice*Floe(kk).area);
-%             Floe(kk).c0 = poly.Vertices';
-%             A_rot=[cos(Floe(kk).alpha_i) -sin(Floe(kk).alpha_i); sin(Floe(kk).alpha_i) cos(Floe(kk).alpha_i)]; %rotation matrix
-%             Floe(kk).c_alpha=A_rot*Floe(kk).c0; %rotate floe contour
-%             Floe(kk).inertia_moment = PolygonMoments(Floe(kk).c0',Floe(kk).h);
-%             Floe(kk).angles = polyangles(poly.Vertices(:,1),poly.Vertices(:,2));
-%         end
-%     else
-%         Floe(ii).alive = 1;
-%     end
-% end
-
-%% 
 
 floenew = [];
 Ridge = zeros(1,length(Floe));
