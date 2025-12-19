@@ -98,7 +98,7 @@ save('Modulus.mat','Modulus','r_mean','L_mean');
 
 dhdt = 1; %Set to 1 for ice to grow in thickness over time
 
-nDTOut=1; %Output frequency (in number of time steps)
+nDTOut=10; %Output frequency (in number of time steps)
 
 nSnapshots=10; %Total number of model snapshots to save
 
