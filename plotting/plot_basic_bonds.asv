@@ -3,6 +3,8 @@ function [fig] =plot_basic_bonds(fig, Floe,ocean,c2_boundary_poly,Nbound,Nbond,P
 %thickness of the floes
 Lx= max(c2_boundary_poly.Vertices(:,1)); %c2 must be symmetric around x=0 for channel boundary conditions.
 Ly= max(c2_boundary_poly.Vertices(:,2)); 
+Lymax= max(c2_boundary_poly.Vertices(:,2)); 
+Lymin= min(c2_boundary_poly.Vertices(:,2)); 
 live = cat(1,Floe.alive);
 Floe(live == 0) = [];
 
@@ -59,10 +61,12 @@ end
 
 %Find length of new Floe variable including the ghost floes
 N=length(Floe);
-
+for iii = 1:Nbound
+    poly_bound(iii) = polyshape(Floe(iii).c_alpha'+[Floe(iii).Xi Floe(iii).Yi]);
+end
 %% Set Up The Plots
 
-ratio=max(ocean.Yo)/max(ocean.Xo);
+ratio=1.616;%max(ocean.Yo)/max(ocean.Xo);
 if (fig==0 || ~isvalid(fig))
     fig=figure('Position',[100 100 1000 1000*ratio],'visible','on');  
     set(fig,'PaperSize',12*[1 ratio],'PaperPosition',12*[0 0 1 ratio]);
@@ -83,58 +87,80 @@ ax = gca;
 ax.GridAlpha = 0.5;
 
 %% Plot the Floes and Ghost Floes
-FloeNumbers = 1:length(Floe);
 Floes = Floe(Nbound+1:end);
-Nums = cat(1,Floe.num);
+FloeNumbers = 1:length(Floes);
+Nums = cat(1,Floes.num);
 clear f1; clear f2
+Xbond = []; Xbroken = [];
+Ybond = []; Ybroken = [];
+Xi = cat(1,Floes.Xi); Yi = cat(1,Floes.Yi);
 count = 1;
+
 for ii = 1:length(Floes)
-    BondNum = unique(cat(1,Floes(ii).bonds.Num));
+
+    % Extract bonds
+    bonds = Floes(ii).bonds;
+
+    if isempty(bonds)
+        continue
+    end
+
+    % differentiate intact / broken bonds
+    isBroken = [bonds.broken];
+    intact   = bonds(~isBroken);
+    broken   = bonds(isBroken);
+
+    % --- Rotation matrix ---
+    A_rot = [ cos(Floes(ii).alpha_i) -sin(Floes(ii).alpha_i)
+              sin(Floes(ii).alpha_i)  cos(Floes(ii).alpha_i) ];
+
+    % --- Plot / collect intact bond positions ---
+    if ~isempty(intactBnds) && ~isempty(cat(1,intactBnds.Xc))
+        pos = A_rot * [cat(1,intactBnds.Xc) cat(1,intactBnds.Yc)]';
+        Xbond = [Xbond; pos(1,:)' + Xi(ii)];
+        Ybond = [Ybond; pos(2,:)' + Yi(ii)];
+    end
+
+    % --- Plot / collect broken bond positions ---
+    if ~isempty(brokenBnds) && ~isempty(cat(1,brokenBnds.Xc))
+        pos = A_rot * [cat(1,brokenBnds.Xc) cat(1,brokenBnds.Yc)]';
+        Xbroken = [Xbroken; pos(1,:)' + Xi(ii)];
+        Ybroken = [Ybroken; pos(2,:)' + Yi(ii)];
+    end
+
+    % --- Connectivity bookkeeping (intact bonds only) ---
+    BondNum = unique(bondNums(isIntact));
+
     for jj = 1:length(BondNum)
         f1(count) = Floes(ii).num;
         f2(count) = BondNum(jj);
-        count = count+1;
+        count = count + 1;
     end
 end
-f2(f1 ==0) = [];f1(f1 ==0) = [];
-G = digraph(f1,f2);
-[bins,binsizes] = conncomp(G,'Type','weak');
-Lia = ismember(FloeNumbers,Nums);Lia(1:Nbond) = 0;
+
+
 clear poly
-for iii = 1:length(Floe)
-    poly(iii) = polyshape(Floe(iii).c_alpha'+[Floe(iii).Xi Floe(iii).Yi]);
+for iii = 1:length(Floes)
+    poly(iii) = polyshape(Floes(iii).c_alpha'+[Floes(iii).Xi Floes(iii).Yi]);
 end
+
 count = 1;
 clear p
-for ii = 1+Nbond:length(binsizes)
-    if Lia(ii)
-        Lia1 = ismember(bins,ii);
-        Lia2 = ismember(Nums,FloeNumbers(Lia1));
-        ptmp = union([poly(Lia2)]);
-        p(count) = ptmp;%rmholes(ptmp);
-        count = count+1;  
-    end
-end
 
+plot(Xbond,Ybond,'r.','linewidth',3)
+plot(Xbroken,Ybroken,'bx','linewidth',2)
 hold on
-colors = distinguishable_colors(length(p));
-for ii = 1:length(p)
-    plot(p(ii),'FaceColor',colors(ii,:) )
-end
 
+plot(poly,'FaceColor','k','FaceAlpha',0.3,'EdgeColor',[1 1 1]*0.2,'linestyle','none');
+if Nbound>0
+    plot(poly_bound,'FaceColor',[0 0.2 0],'FaceAlpha',1,'EdgeAlpha',0.5);
+end
 
 set(0,'CurrentFigure',fig);
-xb=c2_boundary_poly.Vertices(:,1); xb(end+1)=xb(1);
-yb=c2_boundary_poly.Vertices(:,2); yb(end+1)=yb(1);
-plot(xb,yb, 'k-','linewidth',2);
 
 colormap('gray'); caxis([0 1]);
-axis([-60000 60000 -60000 60000])
-% axis([000 20000 00 20000])
-%xlabel('m');ylabel('m');
-set(gca,'Ydir','normal');
-% set(gca,'xtick',[])
-% set(gca,'ytick',[])
+axis([-Lx Lx -Lymax Lymax])
 
-% drawnow
+set(gca,'Ydir','normal');
+
 end

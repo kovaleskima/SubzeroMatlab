@@ -86,7 +86,7 @@ for jj = 1:Ny
                             bonds_i.Fx_p = 0; bonds_j.Fx_p = 0;
                             bonds_i.Fy_p = 0; bonds_j.Fy_p = 0;
                             bonds_i.Stress = [0;0]; bonds_j.Stress = [0;0];
-                            bonds_i.broken = false; bonds_j.broken = false; % add broken flag
+                            bonds_i.broken = false; bonds_j.broken = false;
                             bonds(iii).bond = [bonds(iii).bond bonds_i];
                             bonds(jjj).bond = [bonds(jjj).bond bonds_j];
                         end

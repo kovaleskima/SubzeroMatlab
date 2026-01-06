@@ -60,13 +60,6 @@ min_floe_size = 2*Lx*Ly/10000;% Define the minimum floe size you want in initial
 target_concentration = 1;
 [Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,100,1,min_floe_size);
 
-% DEBUG OUTPUT %
-fig = figure;
-[fig] = plot_basic_bonds(fig,Floe,ocean,c2_boundary_poly,Nb,Nbond,PERIODIC);
-exportgraphics(fig,'./FloesOut/figs/init.jpg');
-save('FloesOut/FloeInit.mat','Floe','bonds','Nbond','Nb');
-% END %
-
 Floe0 = Floe;
 
 if isfield(Floe,'poly')
@@ -249,8 +242,8 @@ while side < 2.5
         if PLOT
             fig = figure;
             [fig] =plot_basic_bonds(fig,Floe,ocean,c2_boundary_poly,Nb,Nbond,PERIODIC);
-            exportgraphics(fig,['./FloesOut/figs/fig' num2str(im_num,'%03.f') '.jpg']);
-            save(['./FloesOut/Floes/Floe' num2str(im_num, '%03.f') '.mat'], 'Floe', 'bonds', 'Nbond', 'Nb');
+            exportgraphics(fig,['./FloesOut/figs/fig' num2str((i_step/10),'%03.f') '.jpg']);
+            save(['./FloesOut/Floes/Floe' num2str(i_step/10, '%03.f') '.mat'], 'Floe', 'bonds', 'Nbond', 'Nb');
         end
         
 
@@ -328,7 +321,7 @@ while side < 2.5
     end
 
 
-    if FRACTURES && mod(i_step,50)==0 %&& im_num > 40
+    if FRACTURES && mod(i_step,10)==0 %&& im_num > 40
         compactness = sum(cat(1,Floe.area))/area(c2_boundary_poly);
         [Floe,Princ] = FracMohr(Floe,Nb,min_floe_size,compactness);
     end

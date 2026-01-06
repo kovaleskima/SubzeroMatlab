@@ -97,28 +97,47 @@ Xi = cat(1,Floes.Xi); Yi = cat(1,Floes.Yi);
 count = 1;
 
 for ii = 1:length(Floes)
-    BondNum = unique(cat(1,Floes(ii).bonds.Num));
-    nanCells = isnan(cat(1,Floes(ii).bonds.Num));
 
-    bnds = Floes(ii).bonds(~nanCells,:);
-    broken = Floes(ii).bonds(nanCells,:);
-    A_rot=[cos(Floes(ii).alpha_i) -sin(Floes(ii).alpha_i); sin(Floes(ii).alpha_i) cos(Floes(ii).alpha_i)];
-    if ~isempty(cat(1,bnds.Xc))
-        bnds_positions = A_rot*[cat(1,bnds.Xc) cat(1,bnds.Yc)]';
-        Xbond = [Xbond; cat(1,bnds_positions(1,:))'+Xi(ii)]; 
-        Ybond = [Ybond; cat(1,bnds_positions(2,:))'+Yi(ii)];  
+    % Extract bonds
+    bonds = Floes(ii).bonds;
+
+    if isempty(bonds)
+        continue
     end
-    if ~isempty(cat(1,broken.Xc))
-        broken_positions = A_rot*[cat(1,broken.Xc) cat(1,broken.Yc)]';
-        Xbroken = [Xbroken; cat(1,broken_positions(1,:))'+Xi(ii)]; 
-        Ybroken = [Ybroken; cat(1,broken_positions(2,:))'+Yi(ii)]; 
+
+    % differentiate intact / broken bonds
+    isBroken = [bonds.broken];
+    intactBnds  = bonds(~isBroken);
+    brokenBnds  = bonds(isBroken);
+
+    % rotation matrix
+    A_rot = [ cos(Floes(ii).alpha_i) -sin(Floes(ii).alpha_i)
+              sin(Floes(ii).alpha_i)  cos(Floes(ii).alpha_i) ];
+
+    % store intact bond positions
+    if ~isempty(intactBnds) && ~isempty(cat(1,intactBnds.Xc))
+        pos = A_rot * [cat(1,intactBnds.Xc) cat(1,intactBnds.Yc)]';
+        Xbond = [Xbond; pos(1,:)' + Xi(ii)];
+        Ybond = [Ybond; pos(2,:)' + Yi(ii)];
     end
+
+    % store broken bond positions
+    if ~isempty(brokenBnds) && ~isempty(cat(1,brokenBnds.Xc))
+        pos = A_rot * [cat(1,brokenBnds.Xc) cat(1,brokenBnds.Yc)]';
+        Xbroken = [Xbroken; pos(1,:)' + Xi(ii)];
+        Ybroken = [Ybroken; pos(2,:)' + Yi(ii)];
+    end
+
+    % store bond number for intact bonds to plot
+    BondNum = unique([intactBnds.Num]);
+
     for jj = 1:length(BondNum)
         f1(count) = Floes(ii).num;
         f2(count) = BondNum(jj);
-        count = count+1;
+        count = count + 1;
     end
 end
+
 
 clear poly
 for iii = 1:length(Floes)
