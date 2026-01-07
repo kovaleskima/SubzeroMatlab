@@ -111,7 +111,7 @@ for i=1+Nb:N  %do interactions with boundary in a separate parfor loop
 end
 
 kill = zeros(1,N0); transfer = kill;
-parfor i=1+Nb:N  %now the interactions could be calculated in a parfor loop!
+for i=1+Nb:N  %now the interactions could be calculated in a parfor loop!
 
 
     c1=[Floe(i).c_alpha(1,:)+x(i); Floe(i).c_alpha(2,:)+y(i)];
@@ -160,7 +160,7 @@ parfor i=1+Nb:N  %now the interactions could be calculated in a parfor loop!
     end
     
 end
-for i = 1:length(kill);
+for i = 1:length(kill)
     if abs(kill(i)-i)>0 && kill(i)>0;
         transfer(kill(i))=i;
     end
@@ -226,7 +226,6 @@ if PERIODIC
 end
 
 keep = ones(1,N0);
-%parfor i=1+Nb:N0
 for i=1+Nb:N0
     
     if ~isempty(Floe(i).interactions)
@@ -450,7 +449,7 @@ if ~isempty(kill(kill>0))
     kill = kill(kill>0);
     for ii = 1:length(kill)
         if Floe(kill(ii)).alive>0 
-            if transfer(ii)>0 && (Floe(kill(ii)).area>2e4 || Floe(kill(ii)).area>2e4)
+            if transfer(ii)>0 && (Floe(kill(ii)).area>2e4)
                 Floe1 = Floe(kill(ii));
                 Floe2 = Floe(transfer(ii));
                 Floe1.poly = polyshape(Floe1.c_alpha'+[Floe1.Xi Floe1.Yi]);

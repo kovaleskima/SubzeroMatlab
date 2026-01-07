@@ -15,7 +15,7 @@ if ~isempty(floe.interactions)
     floe.StressH(:,:,floe.StressCount) = Stress;
     floe.StressCount = floe.StressCount + 1;
     floe.Stress = mean(floe.StressH,3);
-
+                   
     A_rot=[cos(floe.alpha_i) -sin(floe.alpha_i); sin(floe.alpha_i) cos(floe.alpha_i)]; %rotation matrix
     b = sqrt(a(:,2).^2+a(:,3).^2); aa = a;
     aa(b==0,:) = []; [Ny,~] = size(aa);
@@ -243,14 +243,7 @@ else
             ContactPoints = a(:,4:5); Forces = a(:,2:3);
             CP_rot = A_rot*ContactPoints'; F_rot = A_rot*Forces';
             r=[floe.Xi floe.Yi];
-            %[floe.bonds.interactions; CP_rot(1,:)'-r(1) CP_rot(2,:)'-r(2) F_rot'];
         end
-        
-%         Subfloes = A_rot*[floe.bonds.Xs'; floe.bonds.Ys'];
-%         in = inpolygon(Subfloes(1,:),Subfloes(2,:),floe.c_alpha(1,:)',floe.c_alpha(2,:)');
-%         if sum(in)/length(in)<1
-%             xx = 1; xx(1) =[1 2];
-%         end
         
         if doInt.flag
             [theta,rho] = cart2pol(floe.c_alpha(1,:),floe.c_alpha(2,:));
@@ -270,8 +263,8 @@ if ~isempty(floe)
     floe.Fx = ext_force(1); 
 end
 
-FxOA = ext_force(1);%floe.FxOA*floe_area/floe_mass;
-FyOA = ext_force(2);%floe.FyOA*floe_area/floe_mass;
+FxOA = ext_force(1);
+FyOA = ext_force(2);
 end
 
 

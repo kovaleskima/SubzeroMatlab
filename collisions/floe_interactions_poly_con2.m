@@ -7,8 +7,6 @@ id3 ='MATLAB:polyshape:boundary3Points';
 warning('off',id3)
 
 h1 = floe1.h; h2 = floe2.h;
-% r1 = sqrt(floe1.area); if floe1.bonds.bowtie == 1; E1 = floe1.bonds.L/r_bond*Modulus*r_mean/r1; else; E1 = Modulus; end
-% r2 = sqrt(floe2.area); if floe2.bonds.bowtie == 1; E2 = floe2.bonds.L/r_bond*Modulus*r_mean/r2; else; E2 = Modulus; end
 r1 = sqrt(floe1.area); E1 = Modulus;%if floe1.bonds.bowtie == 1; E1 = floe1.bonds.L/r_bond*Modulus*r_mean/r1; else; E1 = Modulus; end
 r2 = sqrt(floe2.area); E2 = Modulus;%if floe2.bonds.bowtie == 1; E2 = floe2.bonds.L/r_bond*Modulus*r_mean/r2; else; E2 = Modulus; end
 Force_factor=E1*E2*h1*h2/(E1*h1*r2+E2*h2*r1); overlap = 0;
@@ -40,7 +38,7 @@ else
         end
     end
 end
-% xx = 1; xx(1)=[1 2];
+
 if isempty(Xi)
     Ar = 0;
 else
@@ -200,21 +198,10 @@ if ismember(floeNum,BondNum) %&& sum(abs(force_1(:)))~=0
     Num1 = ismember(BondNum,floeNum); BondNum2 = cat(1,floe2.bonds.Num); Num2 = ismember(BondNum2,floe1.num);
     L = floe1.bonds(Num1).L; r_bond=floe1.bonds(Num1).r_bnd;
     E1 = Modulus; E2 = Modulus;
-%    E1 = L/L_mean*Modulus*r_mean/r_bond; E2 = Modulus;
+
     Force_factor=E1*E2*h1*h2/(E1*h1*r2+E2*h2*r1)/100; %Tried /10 and it broke to much
     A_rot1=[cos(floe1.alpha_i) -sin(floe1.alpha_i); sin(floe1.alpha_i) cos(floe1.alpha_i)];
     A_rot2=[cos(floe2.alpha) -sin(floe2.alpha); sin(floe2.alpha) cos(floe2.alpha)];
-%     Xb1 = floe1.bonds(Num1).Xb; Yb1 = floe1.bonds(Num1).Yb; P_bond1 = A_rot1*[Xb1;Yb1];
-%     Xb2 = floe2.bonds(Num2).Xb; Yb2 = floe2.bonds(Num2).Yb; P_bond2 = A_rot2*[Xb2;Yb2];
-%     Xc1 = floe1.bonds(Num1).Xb; Yc1 = floe1.bonds(Num1).Yb; P_bond1 = A_rot1*[Xc1;Yc1];
-%     Xc2 = floe2.bonds(Num2).Xb; Yc2 = floe2.bonds(Num2).Yb; P_bond2 = A_rot2*[Xc2;Yc2];
-%     v1 = ([floe1.Ui floe1.Vi]+ floe1.ksi_ice*(P_bond1'));
-%     v2 = ([floe2.Ui floe2.Vi]+ floe2.ksi_ice*(P_bond2'));
-%     F_bond = [floe1.bonds(Num1).Fx_p floe1.bonds(Num1).Fy_p]*damping + Force_factor*L*dt*(v2-v1);
-%     [Ny,~] = size(force_1);
-%     force_1(Ny+1,:) = F_bond;
-%     overlap(Ny+1) = 0;
-%     pcontact(Ny+1,:) = (P_bond1'+[floe1.Xi floe1.Yi]+P_bond2'+[floe2.Xi floe2.Yi])/2;
     Xb1 = cat(1,floe1.bonds(Num1).Xb); Yb1 = cat(1,floe1.bonds(Num1).Yb);
     Xb2 = cat(1,floe2.bonds(Num2).Xb); Yb2 = cat(1,floe2.bonds(Num2).Yb);
     Xc1 = cat(1,floe1.bonds(Num1).Xc); Yc1 = cat(1,floe1.bonds(Num1).Yc);
@@ -235,7 +222,7 @@ if ismember(floeNum,BondNum) %&& sum(abs(force_1(:)))~=0
         angle3 = atan2(norm(det([n2; n1])), dot(n1, n2));
         angle0 = atan2(norm(det([n2; n0])), dot(n2, n0));
         A_rot=[cos(-angle0) -sin(-angle0); sin(-angle0) cos(-angle0)];
-        n1_new = A_rot*n1'; %n2_new = A_rot*n2';
+        n1_new = A_rot*n1'; 
         d = sqrt((Pc_2(2)-Pc_1(2))^2+(Pc_2(1)-Pc_1(1))^2);
         X_b = -sign(n1_new(1))*d*abs(cos(angle3)); Y_b = -sign(n1_new(2))*d*abs(sin(angle3));
         
@@ -245,10 +232,7 @@ if ismember(floeNum,BondNum) %&& sum(abs(force_1(:)))~=0
         
         F_bond_tmp =  Force_factor*L*[X_b; Y_b];
         A_rot=[cos(angle0) -sin(angle0); sin(angle0) cos(angle0)];
-%         if abs(X_b)<1
-%             xx = 1; xx(1) =[1 2];
-%         end
-%         F_bond(:,ii) = [Fx_p(ii); Fy_p(ii)]*damping +A_rot*F_bond_tmp;
+
         F_bond(:,ii) =  F_bond_damp'+A_rot*F_bond_tmp;
         contacts(ii,:) = (Pc_1'+Pc_2')/2;
     end
