@@ -7,15 +7,15 @@
 
 using namespace ClipperLib;
 
-typedef __int64 LONGML64; 
-typedef __int64 longML64;
+typedef __int64 LONG64; 
+typedef __int64 long64;
 
 void read_polygons_MATLAB(const mxArray *prhs, Paths &poly) 
 {
     int id_x, id_y;
     int num_contours;
     int nx, ny;
-    longML64 *x, *y;
+    long64 *x, *y;
     const mxArray *x_in, *y_in;
     
     /*  Checking if input is non empty Matlab-structure */
@@ -53,8 +53,8 @@ void read_polygons_MATLAB(const mxArray *prhs, Paths &poly)
         
         poly[i].resize(nx);
         
-        x = (longML64*)mxGetData(x_in);
-        y = (longML64*)mxGetData(y_in);
+        x = (long64*)mxGetData(x_in);
+        y = (long64*)mxGetData(y_in);
         for (unsigned j = 0; j < nx; j++){
             poly[i][j].X = x[j];
             poly[i][j].Y = y[j];
@@ -85,7 +85,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 {
     Paths subj, clip, solution;
     const char *field_names[] = {"x","y"};
-    mwSize dims[2];
+    int dims[2];
     
     if (nrhs == 0) {
         mexPrintf("OutPol = clipper(RefPol, ClipPol, Method, [RefF], [ClipF]);\n");

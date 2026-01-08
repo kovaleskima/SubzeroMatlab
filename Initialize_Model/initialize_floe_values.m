@@ -21,18 +21,11 @@ FloeNEW.c0 = FloeNEW.c_alpha;
 FloeNEW.inertia_moment = PolygonMoments(FloeNEW.c0',h);
 FloeNEW.angles = polyangles(polya.Vertices(:,1),polya.Vertices(:,2));
 FloeNEW.rmax = sqrt(max(sum((FloeNEW.poly.Vertices' - [Xi;Yi]).^2,1)));
-% n=(fix(FloeNEW.rmax/dX)+1); n=dX*(-n:n);
-% FloeNEW.Xg = n;
-% FloeNEW.Yg = n;
-% [X, Y]= meshgrid(n, n);
-% FloeNEW.X = X;
-% FloeNEW.Y = Y;
+
 FloeNEW.Stress = [0 0; 0 0];
 FloeNEW.strain = [0 0; 0 0];
 FloeNEW.StressH = zeros(2,2,10);
 FloeNEW.StressCount = 1;
-%FloeNEW.strainCount = 0;
-%FloeNEW.MaxShear = 0;
 FloeNEW.Fx = 0; FloeNEW.Fy = 0;
 FloeNEW.FxOA = 0; FloeNEW.FyOA = 0; FloeNEW.torqueOA = 0;
 FloeNEW.alpha_i = 0; FloeNEW.Ui = 0; FloeNEW.Vi = 0;
@@ -46,8 +39,6 @@ while err > 0.1
     err = abs((sum(FloeNEW.A)/50*4*FloeNEW.rmax^2-area(polya)))/area(polya);
     count = count+1; if count>10; err = 0; FloeNEW.alive = 0; end
 end
-% [in] = inpolygon(FloeNEW.X(:)+Xi, FloeNEW.Y(:)+Yi,FloeNEW.poly.Vertices(:,1),FloeNEW.poly.Vertices(:,2));
-% FloeNEW.A=reshape(in,length(FloeNEW.X),length(FloeNEW.X));
 if Nsubfloes > 1
     polyOrig = polyshape(FloeNEW.c_alpha');
     x = [min(FloeNEW.c_alpha(1,:)) max(FloeNEW.c_alpha(1,:))]; dx = x(2)-x(1);
@@ -57,8 +48,6 @@ if Nsubfloes > 1
     while inn < 3
         XX = 0.975*dx/2*(2*rand(ceil(Nsubfloes*dx*dy/FloeNEW.area),1)-1)+(x(2)+x(1))/2;
         YY = 0.975*dy/2*(2*rand(ceil(Nsubfloes*dx*dy/FloeNEW.area),1)-1)+(y(2)+y(1))/2;
-        % X = 0.975*FloeNEW.rmax*(2*rand(ceil(Nsubfloes*FloeNEW.rmax^2/FloeNEW.area),1)-1);
-        % Y = 0.975*FloeNEW.rmax*(2*rand(ceil(Nsubfloes*FloeNEW.rmax^2/FloeNEW.area),1)-1);
         in = inpolygon(XX,YY,FloeNEW.c_alpha(1,:)',FloeNEW.c_alpha(2,:)');
         Ys = YY(in); Xs = XX(in);
         [d_min1] = p_poly_dist(Xs, Ys,FloeNEW.c_alpha(1,:)', FloeNEW.c_alpha(2,:)');
@@ -87,11 +76,7 @@ if Nsubfloes > 1
     for ii = 1:length(b)
         FloeNEW.bonds.Num{ii,1} = [];
         FloeNEW.bonds.d{ii,1} = [];
-%         FloeNEW.bonds.Theta{ii,1} = [];
-%         poly = polyshape(b{ii}); polyNEW = subtract(polyOrig,poly);
-%         FloeNEW.bonds.In(ii,1) = logical(polyNEW.NumHoles);
     end
-%     FloeNEW.bonds.Vert = b';
     A_rot=[cos(FloeNEW.alpha_i) -sin(FloeNEW.alpha_i); sin(FloeNEW.alpha_i) cos(FloeNEW.alpha_i)]; %rotation matrix
 
     Subfloes = A_rot*[FloeNEW.bonds.Xs'; FloeNEW.bonds.Ys'];
@@ -108,10 +93,8 @@ if Nsubfloes > 1
                 d = sqrt((verts(1,1)-verts(2,1))^2+(verts(1,2)-verts(2,2))^2);
                 FloeNEW.bonds.Num{ii} = [FloeNEW.bonds.Num{ii} jj];
                 FloeNEW.bonds.d{ii} = [FloeNEW.bonds.d{ii} d];
-                %FloeNEW.bonds.Theta{ii} = [FloeNEW.bonds.Theta{ii} atan((Ys(jj)-Ys(ii))/(Xs(jj)-Xs(ii)))];
                 FloeNEW.bonds.Num{jj} = [FloeNEW.bonds.Num{jj} ii];
                 FloeNEW.bonds.d{jj} = [FloeNEW.bonds.d{jj} d];
-                %FloeNEW.bonds.Theta{jj} = [FloeNEW.bonds.Theta{jj} atan((Ys(jj)-Ys(ii))/(Xs(jj)-Xs(ii)))];
             end
         end
     end
@@ -121,15 +104,12 @@ else
     FloeNEW.bonds.FloeNum = 0;
     FloeNEW.bonds.BondNum = 0;
     FloeNEW.bonds.interactions = 1;
-%     FloeNEW.bonds.Xs = 0; FloeNEW.bonds.Ys = 0;
-%     FloeNEW.bonds.Num = 0; FloeNEW.bonds.Theta = 0;
-%     FloeNEW.bonds.d = 0; FloeNEW.bonds.interactions = [];
 end
 
 if Nsubfloes > 1
     for ii = 1:length(FloeNEW.bonds.Num)
         if abs(length(FloeNEW.bonds.Num{ii})-length(FloeNEW.bonds.d{ii})) > 0
-            xx = 1; xx(1) =[1 2];
+            error("Bonds mismatch")
         end
     end
 end
@@ -142,15 +122,13 @@ FloeNEW.dksi_ice_p = 0;
 FloeNEW.interactions = [];
 FloeNEW.potentialInteractions = [];
 FloeNEW.collision_force = 0;
-%         FloeNEW.fracture_force = 0;
 FloeNEW.collision_torque = 0;
 FloeNEW.OverlapArea = 0;
 
 
 
 if isnan(FloeNEW.inertia_moment)
-    xx = 1;
-    xx(1) = [1 2];
+    error("moment of inertia not defined")
 end
 
 end

@@ -45,41 +45,43 @@ for ii = 1:length(Floe)
             bnd_tmp = Floe(ii).bonds(Lia);
             Sig1(count) = 0; Sig2(count) = 0;
             for kk = 1:length(bnd_tmp)
-                Sig1(count) = Sig1(count)+bnd_tmp(kk).Stress(1); Sig2(count) = Sig2(count)+bnd_tmp(kk).Stress(2);
+                Sig1(count) = Sig1(count)+bnd_tmp(kk).Stress(1)/50; Sig2(count) = Sig2(count)+bnd_tmp(kk).Stress(2)/50;
                 bnd_tmp(kk).Stress = [0; 0];
             end
             Sig1(count) = Sig1(count)/kk; Sig2(count) = Sig2(count)/kk;
-            % conditional statement that determines whether the bonds are
-            % broken or not
-            if abs(Sig1(count))>1.00e4
-                [Floe(ii).bonds(Lia).broken] = deal(true);
+
+            if abs(Sig1(count))>1.65e4
+                Floe(ii).bonds(Lia) = [];
                 Lia = ismember(FloeNums,bnds(jj));
                 BndNums = cat(1,Floe(Lia).bonds.Num);
                 Lia2 = ismember(BndNums,Floe(ii).num);
-                [Floe(ii).bonds(Lia2).broken] = deal(true);
-            elseif abs(Sig2(count))>1.00e4
-                [Floe(ii).bonds(Lia).broken] = deal(true);
+                Floe(Lia).bonds(Lia2) = [];
+            elseif abs(Sig2(count))>1.65e4
+                Floe(ii).bonds(Lia) = [];
                 Lia = ismember(FloeNums,bnds(jj));
                 BndNums = cat(1,Floe(Lia).bonds.Num);
                 Lia2 = ismember(BndNums,Floe(ii).num);
-                [Floe(ii).bonds(Lia2).broken] = deal(true);
+                Floe(Lia).bonds(Lia2) = [];
             else
                 Floe(ii).bonds(Lia) = bnd_tmp;
             end
             count = count+1;
+%             end
         end
     end
 end
 
         p = rand(length(Floe),1);
-        StressNorm = Stresses/max(Stresses);
+        StressNorm = Stresses/max(Stresses);%rmoutliers(Stresses));
         keep = zeros(length(Floe),1);
         keep(in) = 1;
         keep(A<min_floe_size)=1;
         keep(1:Nb) = ones(Nb,1);
-              
-        %just to only fracture bonds
-        keep = ones(length(Floe),1);
+        
+        
+        %%%%%just to only fracture bonds
+        keep = ones(length(Floe),1);%(Nbond+1:length(Floe)) = ones(length(Floe)-Nbond,1);
+        
         
         keep = logical(keep);
         for ii = 1:length(Floe)

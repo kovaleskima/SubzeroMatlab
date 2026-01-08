@@ -1,8 +1,0 @@
-Running SubzeroCompress2
-{Unrecognized function or variable 'initialize_ocean'.
-
-Error in SubzeroCompress2 (line 42)
-[ocean, HFo, h0]=initialize_ocean(dt,nDTpack);
-} 
-mv: cannot stat 'Floes_bnds2/figs/': No such file or directory
-Completed SubzeroCompress2
