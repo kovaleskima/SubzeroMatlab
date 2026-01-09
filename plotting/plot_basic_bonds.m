@@ -22,7 +22,6 @@ if PERIODIC
     
     for i=1:length(Floe)
         poly = polyshape(Floe(i).c_alpha'+[x(i) y(i)]);
-        %   if alive(i) && (x(i)>Lx-rmax(i)) || (x(i)<-Lx+rmax(i))
         if alive(i) && (max(abs(poly.Vertices(:,1)))>Lx)
             
             ghostFloeX=[ghostFloeX  Floe(i)];
