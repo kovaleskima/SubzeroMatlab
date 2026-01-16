@@ -52,8 +52,8 @@ c2_boundary=initialize_boundaries();
 Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
 c2_boundary_poly = polyshape(c2_boundary');
 c2_border = polyshape(2*[-Lx -Lx Lx Lx; -Ly Ly Ly -Ly]'); c2_border = subtract(c2_border, c2_boundary_poly);
-floebound = initialize_floe_values(c2_border, height,1);
-uright = 0; uleft = 0; %Define speeds that boundaries might be moving with
+
+uright = -7; uleft = 0; %Define speeds that boundaries might be moving with
 min_floe_size = 2*Lx*Ly/10000;% Define the minimum floe size you want in initial configuration
 
 %Initialize Floe state
@@ -359,7 +359,7 @@ while side < 2.5
     live = cat(1,Floe.alive);
     Floe(live == 0) = [];
     
-    if max(c2_boundary(2,:)) > 48000 && mod(i_step,20)==0 && side == 1
+    if max(c2_boundary(2,:)) > 48000 && mod(i_step,10)==0 && side == 1
         xb = c2_boundary(1,:);
         yb = c2_boundary(2,:);
         xb = xb + 2.5*[-1 -1 1 1];
@@ -382,7 +382,7 @@ while side < 2.5
             floebound = initialize_floe_values(c2_border, height, 1);
             side = 2;
         end
-    elseif max(c2_boundary(1,:)) > 48000 && mod(i_step,20)==0 && side == 2
+    elseif max(c2_boundary(1,:)) > 48000 && mod(i_step,10)==0 && side == 2
         xb = c2_boundary(1,:);
         yb = c2_boundary(2,:);
         xb = xb - 2.5*[-1 -1 1 1];
