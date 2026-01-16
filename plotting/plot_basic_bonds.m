@@ -105,7 +105,7 @@ for ii = 1:length(Floes)
     end
 
     % differentiate intact / broken bonds
-    isBroken = [bonds.broken];
+    isBroken = arrayfun(@(b), b.bonds, bonds);
     intactBnds  = bonds(~isBroken);
     brokenBnds  = bonds(isBroken);
 
