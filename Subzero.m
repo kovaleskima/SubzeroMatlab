@@ -362,7 +362,7 @@ while side < 2.5
     live = cat(1,Floe.alive);
     Floe(live == 0) = [];
     
-    if max(c2_boundary(2,:)) > 48000 && mod(i_step,10)==0 && side == 1
+    if mod(i_step,10)==0 
         xb = c2_boundary(1,:);
         yb = c2_boundary(2,:);
         xb = xb + 2.5*[-1 -1 1 1];
@@ -372,34 +372,7 @@ while side < 2.5
         c2_boundary_poly = polyshape(c2_boundary');
         c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
         floebound = initialize_floe_values(c2_border, height, 1);
-        if max(yb) <= 48000
-            Adomain = area(c2_boundary_poly);
-            for jj = 1:length(Floe)
-                xmax(jj) = max(abs(Floe(jj).Xi+Floe(jj).c_alpha(1,:)));
-            end
-            Lx = max(xmax); Ly = Adomain/(Lx*4);
-            xb = Lx*[-1 -1 1 1]; 
-            yb = Ly*[-1 1 1 -1];
-            c2_boundary_poly = polyshape(c2_boundary');
-            c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
-            floebound = initialize_floe_values(c2_border, height, 1);
-            side = 2;
-        end
-    elseif max(c2_boundary(1,:)) > 48000 && mod(i_step,10)==0 && side == 2
-        xb = c2_boundary(1,:);
-        yb = c2_boundary(2,:);
-        xb = xb - 2.5*[-1 -1 1 1];
-        yb = yb + 2.5*[-1 1 1 -1];
-        c2_boundary = [xb; yb];
-        Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
-        c2_boundary_poly = polyshape(c2_boundary');
-        c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
-        floebound = initialize_floe_values(c2_border, height, 1);
-        if max(xb) <= 48000
-            side = 3;
-        end
-    end
-    
+    end    
     Time=Time+dt; i_step=i_step+1; %update time index
     
 end
