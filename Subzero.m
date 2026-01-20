@@ -99,13 +99,16 @@ nDT=nDTOut*nSnapshots; %Total number of time steps
 
 nSimp = 20;
 
-nPar = 1; %Number of workers for parfor
+% use pc=(...) to set local write directory for parpool on HPC cluster
+pc = parcluster('Processes')
+pc.JobStorageLocation = 'gscratch/scrubbed/makov/matlab_jobs';
+nPar = 4; %Number of workers for parfor
 poolobj = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(poolobj)
-    parpool(nPar);
+    parpool(pc, nPar);
 else
     delete(poolobj);
-    parpool(nPar);
+    parpool(pc, nPar);
 end
 
 target_concentration=1;%Setting new target concentration to one if ice will freeze during winter for packing
