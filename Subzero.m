@@ -101,7 +101,7 @@ nSimp = 20;
 
 % use pc=(...) to set local write directory for parpool on HPC cluster
 pc = parcluster('Processes')
-pc.JobStorageLocation = 'gscratch/scrubbed/makov/matlab_jobs';
+pc.JobStorageLocation = 'matlab_jobs';
 nPar = 4; %Number of workers for parfor
 poolobj = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(poolobj)
@@ -366,7 +366,7 @@ while side < 2.5
         xb = c2_boundary(1,:);
         yb = c2_boundary(2,:);
         xb = xb + 2.5*[-1 -1 1 1];
-        yb = yb - 2.5*[-1 1 1 -1];
+        yb = yb - 10*[0 1 1 0];
         c2_boundary = [xb; yb];
         Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
         c2_boundary_poly = polyshape(c2_boundary');
