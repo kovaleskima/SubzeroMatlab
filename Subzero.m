@@ -16,7 +16,7 @@ CORNERS = false;
 
 COLLISION = true;
 
-AVERAGE = true;
+AVERAGE = false;
 
 RAFTING = false;
 
@@ -129,21 +129,10 @@ Xc = (xc(1:end-1)+xc(2:end))/2; Yc = -(yc(1:end-1)+yc(2:end))/2;
 %initialize dissolved ice at zero
 dissolvedNEW=zeros(Ny,Nx);
 
-%Initiailize Eulearian Data
+%Initialize Eulearian Data
 [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
 Vd = zeros(Ny,Nx,2);
 Vdnew=zeros(Ny, Nx);
-SigXX = zeros(Ny, Nx); SigYX = zeros(Ny, Nx);
-SigXY = zeros(Ny, Nx); SigYY = zeros(Ny, Nx);
-DSigX = 0; DSigY= 0; DSig1= 0; DSig2= 0;
-DivSigX = zeros(Ny, Nx); DivSig1 = zeros(Ny, Nx);
-DivSigY = zeros(Ny, Nx); DivSig2 = zeros(Ny, Nx);
-Eux = zeros(Ny, Nx); Evx = zeros(Ny, Nx);
-Euy = zeros(Ny, Nx); Evy = zeros(Ny, Nx);
-U = zeros(Ny, Nx); V = zeros(Ny, Nx);
-dU = zeros(Ny, Nx); dV = zeros(Ny, Nx);
-Fx = zeros(Ny, Nx); Fy = zeros(Ny, Nx);
-Sig = zeros(Ny, Nx); mass = zeros(Ny,Nx);
 
 %% Calc interactions and plot initial state
 Floe=Floe(logical(cat(1,Floe.alive)));
@@ -243,14 +232,15 @@ while side < 2.5
         % MOVE BOUNDARIES %
         xb = c2_boundary(1,:);
         yb = c2_boundary(2,:);
-        yb = yb - 100*[0 1 1 0];
+        yb = yb - 1000*[0 1 1 0];
         c2_boundary = [xb; yb];
         Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
         c2_boundary_poly = polyshape(c2_boundary');
         c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
         floebound = initialize_floe_values(c2_border, height, 1);
 
-        [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
+        % if plotting eulerian data use this but I'm not for now
+        %[eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
         if PLOT
             fig = figure;
             axis equal
@@ -259,32 +249,6 @@ while side < 2.5
             exportgraphics(fig,['./FloesOut/figs/fig' num2str((i_step/10),'%03.f') '.jpg']);
             close(fig);
             save(['./FloesOut/Floes/Floe' num2str(i_step/10, '%03.f') '.mat'], 'Floe', 'bonds', 'Nbond', 'Nb');
-        end
-        
-
-        if AVERAGE
-            SigXXa = SigXX/fix(nDTOut); SigYXa = SigYX/fix(nDTOut);
-            SigXYa = SigXY/fix(nDTOut); SigYYa = SigYY/fix(nDTOut);
-            DivSigXa = DivSigX/fix(nDTOut); DivSig1a = DivSig1/fix(nDTOut);
-            DivSigYa = DivSigY/fix(nDTOut); DivSig2a = DivSig2/fix(nDTOut);
-            Eux = Eux/fix(nDTOut); Evx = Evx/fix(nDTOut);
-            Euy = Euy/fix(nDTOut); Evy = Evy/fix(nDTOut);
-            U = U/fix(nDTOut); V = V/fix(nDTOut);
-            dU = dU/fix(nDTOut); dV = dV/fix(nDTOut);
-            Fx = Fx/fix(nDTOut); Fy = Fy/fix(nDTOut);
-            Sig = Sig/fix(nDTOut); 
-            mass = mass/fix(nDTOut);
-        else
-            SigXXa = squeeze(eularian_data.stressxx); SigYXa = squeeze(eularian_data.stressyx);
-            SigXYa = squeeze(eularian_data.stressxy); SigYYa = squeeze(eularian_data.stressyy);
-            DivSigXa = DSigX; DivSig1a = DSig1;
-            DivSigYa = DSigY; DivSig2a = DSig2;
-            Eux = squeeze(eularian_data.strainux); Evx = squeeze(eularian_data.strainvx);
-            Euy = squeeze(eularian_data.strainuy); Evy = squeeze(eularian_data.strainvy);
-            U = U+squeeze(eularian_data.u);V = V+squeeze(eularian_data.v);
-            dU = dU+squeeze(eularian_data.du);dV = dV+squeeze(eularian_data.dv);
-            Fx = Fx+squeeze(eularian_data.force_x);Fy = Fy+squeeze(eularian_data.force_x);
-            Sig = Sig+squeeze(eularian_data.stress);
         end
         
     end
@@ -296,27 +260,9 @@ while side < 2.5
             [Floe,Vd] = pack_ice_new(Floe,c2_boundary,dhdt,Vd,target_concentration,ocean, height, min_floe_size, PERIODIC,3,3,Nb);
         end
     end
-    
-    
-    
+       
     %Calculate forces and torques and intergrate forward
     [Floe,dissolvedNEW] = floe_interactions_all(Floe,floebound, uright, 0, ocean, winds, c2_boundary, dt, HFo,min_floe_size, Nx,Ny,Nb, dissolvedNEW,doInt,COLLISION, PERIODIC, RIDGING, RAFTING);
-    
-    if AVERAGE
-        [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
-        SigXX = SigXX+squeeze(eularian_data.stressxx); SigYX = SigYX+squeeze(eularian_data.stressyx);
-        SigXY = SigXY+squeeze(eularian_data.stressxy); SigYY = SigYY+squeeze(eularian_data.stressyy);
-        Eux = Eux+squeeze(eularian_data.strainux); Evx = Evx+squeeze(eularian_data.strainvx);
-        Euy = Euy+squeeze(eularian_data.strainuy); Evy = Evy+squeeze(eularian_data.strainvy);
-        U = U+squeeze(eularian_data.u);V = V+squeeze(eularian_data.v);
-        dU = dU+squeeze(eularian_data.du);dV = dV+squeeze(eularian_data.dv); 
-        Fx = Fx+squeeze(eularian_data.force_x);Fy = Fy+squeeze(eularian_data.force_y);
-        Sig = Sig+squeeze(eularian_data.stress);
-        mass = mass+squeeze(eularian_data.Mtot);
-        [DSig1, DSig2, DSigX, DSigY] = Calc_Stress(eularian_data,dt, c2_boundary);
-        DivSigX = DivSigX+DSigX; DivSig1 = DivSig1+DSig1;
-        DivSigY = DivSigY+DSigY; DivSig2 = DivSig2+DSig2;
-    end
     
     %Perform welding if selected to at designated rate
     if WELDING && mod(i_step,25)==0

@@ -41,38 +41,54 @@ for ii = 1:length(Floe)
     if ~isempty(Floe(ii).bonds)
         bnds = unique(cat(1,Floe(ii).bonds.Num));
         for jj = length(bnds):-1:1
-            Lia = ismember(cat(1,Floe(ii).bonds.Num),bnds(jj));
-            bnd_tmp = Floe(ii).bonds(Lia);
-            Sig1(count) = 0; Sig2(count) = 0;
-            for kk = 1:length(bnd_tmp)
-                Sig1(count) = Sig1(count)+bnd_tmp(kk).Stress(1); Sig2(count) = Sig2(count)+bnd_tmp(kk).Stress(2);
+            bondMask = ismember(cat(1,Floe(ii).bonds.Num), bnds(jj));
+            bnd_tmp  = Floe(ii).bonds(bondMask);
+            
+            Sig1(count) = 0;
+            Sig2(count) = 0;
+            
+            nb = numel(bnd_tmp);
+            for kk = 1:nb
+                Sig1(count) = Sig1(count) + bnd_tmp(kk).Stress(1);
+                Sig2(count) = Sig2(count) + bnd_tmp(kk).Stress(2);
                 bnd_tmp(kk).Stress = [0; 0];
             end
-            Sig1(count) = Sig1(count)/kk; Sig2(count) = Sig2(count)/kk;
-            % conditional statement that determines whether the bonds are
-            % broken or not
-            if abs(Sig1(count))>1.00e4
-                [Floe(ii).bonds(Lia).broken] = deal(true);
-                Lia = ismember(FloeNums,bnds(jj));
-                BndNums = cat(1,Floe(Lia).bonds.Num);
-                Lia2 = ismember(BndNums,Floe(ii).num);
-                [Floe(ii).bonds(Lia2).broken] = deal(true);
-            elseif abs(Sig2(count))>1.00e4
-                [Floe(ii).bonds(Lia).broken] = deal(true);
-                Lia = ismember(FloeNums,bnds(jj));
-                BndNums = cat(1,Floe(Lia).bonds.Num);
-                Lia2 = ismember(BndNums,Floe(ii).num);
-                [Floe(ii).bonds(Lia2).broken] = deal(true);
-            else
-                Floe(ii).bonds(Lia) = bnd_tmp;
+            
+            if nb > 0
+                Sig1(count) = Sig1(count)/nb;
+                Sig2(count) = Sig2(count)/nb;
             end
+            
+            % Find neighboring floes safely
+            floeMask = ismember(FloeNums, bnds(jj));
+            if any(floeMask)
+                bondsList = {Floe(floeMask).bonds};
+                bondsList = bondsList(~cellfun(@isempty, bondsList));
+                if ~isempty(bondsList)
+                    BndNums = cat(1, bondsList{:}.Num);
+                else
+                    BndNums = [];
+                end
+            else
+                BndNums = [];
+            end
+            
+            % Fracture decision
+            if abs(Sig1(count)) > 1.65e4 || abs(Sig2(count)) > 1.65e4
+                [Floe(ii).bonds(bondMask).broken] = deal(true);
+                if ~isempty(BndNums)
+                    neighborMask = ismember(BndNums, Floe(ii).num);
+                    [Floe(ii).bonds(neighborMask).broken] = deal(true);
+                end
+            else
+                Floe(ii).bonds(bondMask) = bnd_tmp;
+            end
+
             count = count+1;
         end
     end
 end
 
-        p = rand(length(Floe),1);
-        StressNorm = Stresses/max(Stresses);
         keep = zeros(length(Floe),1);
         keep(in) = 1;
         keep(A<min_floe_size)=1;
