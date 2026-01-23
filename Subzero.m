@@ -1,4 +1,4 @@
-close all; clear all;
+close all; clearvars;
 
 %% Set Flags
 
@@ -16,7 +16,7 @@ CORNERS = false;
 
 COLLISION = true;
 
-AVERAGE = false;
+AVERAGE = true;
 
 RAFTING = false;
 
@@ -239,13 +239,25 @@ while side < 2.5
 
     
     if mod(i_step,nDTOut)==0  %plot the state after a number of timesteps
-        
+
+        % MOVE BOUNDARIES %
+        xb = c2_boundary(1,:);
+        yb = c2_boundary(2,:);
+        yb = yb - 100*[0 1 1 0];
+        c2_boundary = [xb; yb];
+        Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
+        c2_boundary_poly = polyshape(c2_boundary');
+        c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
+        floebound = initialize_floe_values(c2_border, height, 1);
 
         [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
         if PLOT
             fig = figure;
+            axis equal
+            axis manual
             [fig] =plot_basic_bonds(fig,Floe,ocean,c2_boundary_poly,Nb,Nbond,PERIODIC);
             exportgraphics(fig,['./FloesOut/figs/fig' num2str((i_step/10),'%03.f') '.jpg']);
+            close(fig);
             save(['./FloesOut/Floes/Floe' num2str(i_step/10, '%03.f') '.mat'], 'Floe', 'bonds', 'Nbond', 'Nb');
         end
         
@@ -362,17 +374,7 @@ while side < 2.5
     live = cat(1,Floe.alive);
     Floe(live == 0) = [];
     
-    if mod(i_step,10)==0 
-        xb = c2_boundary(1,:);
-        yb = c2_boundary(2,:);
-        xb = xb + 2.5*[-1 -1 1 1];
-        yb = yb - 10*[0 1 1 0];
-        c2_boundary = [xb; yb];
-        Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
-        c2_boundary_poly = polyshape(c2_boundary');
-        c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
-        floebound = initialize_floe_values(c2_border, height, 1);
-    end    
+        
     Time=Time+dt; i_step=i_step+1; %update time index
     
 end
