@@ -102,7 +102,7 @@ nSimp = 20;
 % use pc=(...) to set local write directory for parpool on HPC cluster
 pc = parcluster('Processes')
 pc.JobStorageLocation = 'matlab_jobs';
-nPar = 4; %Number of workers for parfor
+nPar = 6; %Number of workers for parfor
 poolobj = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(poolobj)
     parpool(pc, nPar);
