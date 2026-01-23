@@ -22,7 +22,6 @@ if PERIODIC
     
     for i=1:length(Floe)
         poly = polyshape(Floe(i).c_alpha'+[x(i) y(i)]);
-        %   if alive(i) && (x(i)>Lx-rmax(i)) || (x(i)<-Lx+rmax(i))
         if alive(i) && (max(abs(poly.Vertices(:,1)))>Lx)
             
             ghostFloeX=[ghostFloeX  Floe(i)];
@@ -106,7 +105,7 @@ for ii = 1:length(Floes)
     end
 
     % differentiate intact / broken bonds
-    isBroken = [bonds.broken];
+    isBroken = arrayfun(@(b) ~isempty(b.broken) && logical(b.broken), bonds);
     intactBnds  = bonds(~isBroken);
     brokenBnds  = bonds(isBroken);
 

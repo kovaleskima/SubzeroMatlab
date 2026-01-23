@@ -7,6 +7,8 @@ c = flipud(target_concentration);
 x = min(c2_boundary(1,:)):(max(c2_boundary(1,:))-min(c2_boundary(1,:)))/Nx:max(c2_boundary(1,:));
 y = min(c2_boundary(2,:)):(max(c2_boundary(2,:))-min(c2_boundary(2,:)))/Ny:max(c2_boundary(2,:));
 c2_boundary_poly = polyshape(c2_boundary');
+dx = x(2)-x(1);
+dy = y(2)-y(1);
 
 Nbound = 0;
 Floe = [];
@@ -22,18 +24,18 @@ for jj = 1:Ny
                 Floe = initialize_floe_values(c2_boundary_poly,height,NumSubfloes);
             else
 
-                % begin 2floes init here, just drawing two squares next to
-                % each other and creating a cell array called 'b'
-                [centroidx, centroidy] = centroid(c2_boundary_poly); 
-                verts1 = [[centroidx-10000 centroidy]; [centroidx-10000 centroidy+10000]; [centroidx centroidy+10000]; [centroidx centroidy]];
-                verts2 = [[centroidx centroidy]; [centroidx centroidy+10000]; [centroidx+10000 centroidy+10000]; [centroidx+10000 centroidy]];
-                b = {verts1 verts2};
-
-                for iii = 1:length(b) % for each element make an empty bond array
+                % make a voronoi tesselated box
+                X = 0.975*dx/2*(2*rand(N,1)-1)+(x(ii)+x(ii+1))/2;
+                Y = 0.975*dy/2*(2*rand(N,1)-1)+(y(jj)+y(jj+1))/2;
+                in = inpolygon(X,Y,boundary.Vertices(:,1),boundary.Vertices(:,2));
+                X = X(in); Y = Y(in);
+                [~, b,~,~,~] = polybnd_voronoi([X Y],boundary.Vertices);
+                
+                for iii = 1:length(b)
                     bonds(iii).bond = [];
                 end
                 r = sqrt(min_floe_size);
-                for m = 1:length(b) % for each element make a polygon out of its vertices
+                for m = 1:length(b)
                     poly(m) = polyshape(b{m});
                 end
                 
@@ -145,13 +147,6 @@ for ii = 1:length(Floe)
     end
 end
 Nbond = 0;
-
-% Set second square to move steadily to the right while the first remains
-% stationary
-Floe(1).Ui = 0;
-Floe(1).Vi = 0; 
-Floe(2).Ui = 7;
-Floe(2).Vi = 0;
 
 end
 

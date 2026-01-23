@@ -1,4 +1,4 @@
-close all; clear all;
+close all; clearvars;
 
 %% Set Flags
 
@@ -52,8 +52,8 @@ c2_boundary=initialize_boundaries();
 Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
 c2_boundary_poly = polyshape(c2_boundary');
 c2_border = polyshape(2*[-Lx -Lx Lx Lx; -Ly Ly Ly -Ly]'); c2_border = subtract(c2_border, c2_boundary_poly);
-floebound = initialize_floe_values(c2_border, height,1);
-uright = 0; uleft = 0; %Define speeds that boundaries might be moving with
+
+uright = -7; uleft = 0; %Define speeds that boundaries might be moving with
 min_floe_size = 2*Lx*Ly/10000;% Define the minimum floe size you want in initial configuration
 
 %Initialize Floe state
@@ -99,13 +99,16 @@ nDT=nDTOut*nSnapshots; %Total number of time steps
 
 nSimp = 20;
 
+% use pc=(...) to set local write directory for parpool on HPC cluster
+pc = parcluster('Processes')
+pc.JobStorageLocation = 'matlab_jobs';
 nPar = 6; %Number of workers for parfor
 poolobj = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(poolobj)
-    parpool(nPar);
+    parpool(pc, nPar);
 else
     delete(poolobj);
-    parpool(nPar);
+    parpool(pc, nPar);
 end
 
 target_concentration=1;%Setting new target concentration to one if ice will freeze during winter for packing
@@ -126,21 +129,10 @@ Xc = (xc(1:end-1)+xc(2:end))/2; Yc = -(yc(1:end-1)+yc(2:end))/2;
 %initialize dissolved ice at zero
 dissolvedNEW=zeros(Ny,Nx);
 
-%Initiailize Eulearian Data
+%Initialize Eulearian Data
 [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
 Vd = zeros(Ny,Nx,2);
 Vdnew=zeros(Ny, Nx);
-SigXX = zeros(Ny, Nx); SigYX = zeros(Ny, Nx);
-SigXY = zeros(Ny, Nx); SigYY = zeros(Ny, Nx);
-DSigX = 0; DSigY= 0; DSig1= 0; DSig2= 0;
-DivSigX = zeros(Ny, Nx); DivSig1 = zeros(Ny, Nx);
-DivSigY = zeros(Ny, Nx); DivSig2 = zeros(Ny, Nx);
-Eux = zeros(Ny, Nx); Evx = zeros(Ny, Nx);
-Euy = zeros(Ny, Nx); Evy = zeros(Ny, Nx);
-U = zeros(Ny, Nx); V = zeros(Ny, Nx);
-dU = zeros(Ny, Nx); dV = zeros(Ny, Nx);
-Fx = zeros(Ny, Nx); Fy = zeros(Ny, Nx);
-Sig = zeros(Ny, Nx); mass = zeros(Ny,Nx);
 
 %% Calc interactions and plot initial state
 Floe=Floe(logical(cat(1,Floe.alive)));
@@ -236,40 +228,27 @@ while side < 2.5
 
     
     if mod(i_step,nDTOut)==0  %plot the state after a number of timesteps
-        
 
-        [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
+        % MOVE BOUNDARIES %
+        xb = c2_boundary(1,:);
+        yb = c2_boundary(2,:);
+        yb = yb - 1000*[0 1 1 0];
+        c2_boundary = [xb; yb];
+        Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
+        c2_boundary_poly = polyshape(c2_boundary');
+        c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
+        floebound = initialize_floe_values(c2_border, height, 1);
+
+        % if plotting eulerian data use this but I'm not for now
+        %[eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
         if PLOT
             fig = figure;
+            axis equal
+            axis manual
             [fig] =plot_basic_bonds(fig,Floe,ocean,c2_boundary_poly,Nb,Nbond,PERIODIC);
             exportgraphics(fig,['./FloesOut/figs/fig' num2str((i_step/10),'%03.f') '.jpg']);
+            close(fig);
             save(['./FloesOut/Floes/Floe' num2str(i_step/10, '%03.f') '.mat'], 'Floe', 'bonds', 'Nbond', 'Nb');
-        end
-        
-
-        if AVERAGE
-            SigXXa = SigXX/fix(nDTOut); SigYXa = SigYX/fix(nDTOut);
-            SigXYa = SigXY/fix(nDTOut); SigYYa = SigYY/fix(nDTOut);
-            DivSigXa = DivSigX/fix(nDTOut); DivSig1a = DivSig1/fix(nDTOut);
-            DivSigYa = DivSigY/fix(nDTOut); DivSig2a = DivSig2/fix(nDTOut);
-            Eux = Eux/fix(nDTOut); Evx = Evx/fix(nDTOut);
-            Euy = Euy/fix(nDTOut); Evy = Evy/fix(nDTOut);
-            U = U/fix(nDTOut); V = V/fix(nDTOut);
-            dU = dU/fix(nDTOut); dV = dV/fix(nDTOut);
-            Fx = Fx/fix(nDTOut); Fy = Fy/fix(nDTOut);
-            Sig = Sig/fix(nDTOut); 
-            mass = mass/fix(nDTOut);
-        else
-            SigXXa = squeeze(eularian_data.stressxx); SigYXa = squeeze(eularian_data.stressyx);
-            SigXYa = squeeze(eularian_data.stressxy); SigYYa = squeeze(eularian_data.stressyy);
-            DivSigXa = DSigX; DivSig1a = DSig1;
-            DivSigYa = DSigY; DivSig2a = DSig2;
-            Eux = squeeze(eularian_data.strainux); Evx = squeeze(eularian_data.strainvx);
-            Euy = squeeze(eularian_data.strainuy); Evy = squeeze(eularian_data.strainvy);
-            U = U+squeeze(eularian_data.u);V = V+squeeze(eularian_data.v);
-            dU = dU+squeeze(eularian_data.du);dV = dV+squeeze(eularian_data.dv);
-            Fx = Fx+squeeze(eularian_data.force_x);Fy = Fy+squeeze(eularian_data.force_x);
-            Sig = Sig+squeeze(eularian_data.stress);
         end
         
     end
@@ -281,27 +260,9 @@ while side < 2.5
             [Floe,Vd] = pack_ice_new(Floe,c2_boundary,dhdt,Vd,target_concentration,ocean, height, min_floe_size, PERIODIC,3,3,Nb);
         end
     end
-    
-    
-    
+       
     %Calculate forces and torques and intergrate forward
     [Floe,dissolvedNEW] = floe_interactions_all(Floe,floebound, uright, 0, ocean, winds, c2_boundary, dt, HFo,min_floe_size, Nx,Ny,Nb, dissolvedNEW,doInt,COLLISION, PERIODIC, RIDGING, RAFTING);
-    
-    if AVERAGE
-        [eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
-        SigXX = SigXX+squeeze(eularian_data.stressxx); SigYX = SigYX+squeeze(eularian_data.stressyx);
-        SigXY = SigXY+squeeze(eularian_data.stressxy); SigYY = SigYY+squeeze(eularian_data.stressyy);
-        Eux = Eux+squeeze(eularian_data.strainux); Evx = Evx+squeeze(eularian_data.strainvx);
-        Euy = Euy+squeeze(eularian_data.strainuy); Evy = Evy+squeeze(eularian_data.strainvy);
-        U = U+squeeze(eularian_data.u);V = V+squeeze(eularian_data.v);
-        dU = dU+squeeze(eularian_data.du);dV = dV+squeeze(eularian_data.dv); 
-        Fx = Fx+squeeze(eularian_data.force_x);Fy = Fy+squeeze(eularian_data.force_y);
-        Sig = Sig+squeeze(eularian_data.stress);
-        mass = mass+squeeze(eularian_data.Mtot);
-        [DSig1, DSig2, DSigX, DSigY] = Calc_Stress(eularian_data,dt, c2_boundary);
-        DivSigX = DivSigX+DSigX; DivSig1 = DivSig1+DSig1;
-        DivSigY = DivSigY+DSigY; DivSig2 = DivSig2+DSig2;
-    end
     
     %Perform welding if selected to at designated rate
     if WELDING && mod(i_step,25)==0
@@ -359,44 +320,7 @@ while side < 2.5
     live = cat(1,Floe.alive);
     Floe(live == 0) = [];
     
-    if max(c2_boundary(2,:)) > 48000 && mod(i_step,20)==0 && side == 1
-        xb = c2_boundary(1,:);
-        yb = c2_boundary(2,:);
-        xb = xb + 2.5*[-1 -1 1 1];
-        yb = yb - 2.5*[-1 1 1 -1];
-        c2_boundary = [xb; yb];
-        Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
-        c2_boundary_poly = polyshape(c2_boundary');
-        c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
-        floebound = initialize_floe_values(c2_border, height, 1);
-        if max(yb) <= 48000
-            Adomain = area(c2_boundary_poly);
-            for jj = 1:length(Floe)
-                xmax(jj) = max(abs(Floe(jj).Xi+Floe(jj).c_alpha(1,:)));
-            end
-            Lx = max(xmax); Ly = Adomain/(Lx*4);
-            xb = Lx*[-1 -1 1 1]; 
-            yb = Ly*[-1 1 1 -1];
-            c2_boundary_poly = polyshape(c2_boundary');
-            c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
-            floebound = initialize_floe_values(c2_border, height, 1);
-            side = 2;
-        end
-    elseif max(c2_boundary(1,:)) > 48000 && mod(i_step,20)==0 && side == 2
-        xb = c2_boundary(1,:);
-        yb = c2_boundary(2,:);
-        xb = xb - 2.5*[-1 -1 1 1];
-        yb = yb + 2.5*[-1 1 1 -1];
-        c2_boundary = [xb; yb];
-        Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
-        c2_boundary_poly = polyshape(c2_boundary');
-        c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
-        floebound = initialize_floe_values(c2_border, height, 1);
-        if max(xb) <= 48000
-            side = 3;
-        end
-    end
-    
+        
     Time=Time+dt; i_step=i_step+1; %update time index
     
 end

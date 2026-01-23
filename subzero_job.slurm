@@ -1,26 +1,25 @@
 #!/bin/bash
 
-#SBATCH --job-name=SubzeroCompress2
+#SBATCH --job-name=Subzero
 #SBATCH --account=coenv
-#SBATCH --partition=ckpt
+#SBATCH --partition=ckpt-all
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --mem=1G
+#SBATCH --ntasks-per-node=6
+#SBATCH --mem=10G
 #SBATCH --time=12:00:00
 #SBATCH -o log/%x_%j.out
 
 # commands
 module load matlab
 
-echo "Running SubzeroCompress2"
-matlab -batch "SubzeroCompress2"
-mv Floes_bnds2/figs/ ./figs_SubzeroCompress2/
-echo "Completed SubzeroCompress2"
+echo "Running Subzero"
+matlab -batch "Subzero"
+echo "Run Completed"
 
 # Script explanation:
 # 1. load matlab module
-# 2. load simulation variables: elastic modulus factor "stiffness" and the bond strength "bond_threshold"
-# 3. begin simulation
+# 2. begin simulation
+# 3. notify when simulation is completed
 
 # SBATCH directives:
 # The above lines starting with "#SBATCH" are sbatch directives, or flags passed to SLURM via the
