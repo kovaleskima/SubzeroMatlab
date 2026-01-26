@@ -58,7 +58,7 @@ min_floe_size = 2*Lx*Ly/10000;% Define the minimum floe size you want in initial
 
 %Initialize Floe state
 target_concentration = 1;
-[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,2500,1,min_floe_size);
+[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,100,1,min_floe_size);
 
 Floe0 = Floe;
 
@@ -92,7 +92,7 @@ dhdt = 1; %Set to 1 for ice to grow in thickness over time
 
 nDTOut=10; %Output frequency (in number of time steps)
 
-nSnapshots=10; %Total number of model snapshots to save
+nSnapshots=5;  %Total number of model snapshots to save
 
 nDT=nDTOut*nSnapshots; %Total number of time steps
 
@@ -231,12 +231,12 @@ while side < 2.5
         % MOVE BOUNDARIES %
         xb = c2_boundary(1,:);
         yb = c2_boundary(2,:);
-        yb = yb - 1000*[0 1 1 0];
+        yb = yb - 10*[-1 1 1 -1];
         c2_boundary = [xb; yb];
         Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
         c2_boundary_poly = polyshape(c2_boundary');
-        c2_border = scale(c2_boundary_poly,2); c2_border = subtract(c2_border, c2_boundary_poly);
-        floebound = initialize_floe_values(c2_border, height, 1);
+        new_boundary = subtract(c2_border, c2_boundary_poly);
+        floebound = initialize_floe_values(new_boundary, height, 1);
 
         % if plotting eulerian data use this but I'm not for now
         %[eularian_data] = calc_eulerian_stress2(Floe,Nx,Ny,Nb,Nbond,c2_boundary,dt,PERIODIC);
@@ -244,7 +244,7 @@ while side < 2.5
             fig = figure;
             axis equal
             axis manual
-            [fig] =plot_basic_bonds(fig,Floe,ocean,c2_boundary_poly,Nb,Nbond,PERIODIC);
+            [fig] =plot_basic_bonds(fig,Floe,ocean, Lx, Ly, c2_boundary_poly,Nb,Nbond,PERIODIC);
             exportgraphics(fig,['./FloesOut/figs/fig' num2str((i_step/10),'%03.f') '.jpg']);
             close(fig);
             save(['./FloesOut/Floes/Floe' num2str(i_step/10, '%03.f') '.mat'], 'Floe', 'bonds', 'Nbond', 'Nb');

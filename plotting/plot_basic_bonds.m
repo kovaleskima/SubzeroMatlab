@@ -1,10 +1,10 @@
-function [fig] =plot_basic_bonds(fig, Floe,ocean,c2_boundary_poly,Nbound,Nbond,PERIODIC)
+function [fig] =plot_basic_bonds(fig, Floe, ocean, Lx, Ly, c2_boundary_poly,Nbound,Nbond,PERIODIC)
 %This function creates plots of the floe state showing the stress and and
 %thickness of the floes
-Lx= max(c2_boundary_poly.Vertices(:,1)); %c2 must be symmetric around x=0 for channel boundary conditions.
-Ly= max(c2_boundary_poly.Vertices(:,2)); 
-Lymax= max(c2_boundary_poly.Vertices(:,2)); 
-Lymin= min(c2_boundary_poly.Vertices(:,2)); 
+Lxmax = Lx;
+Lymax = Ly;
+Lx = max(c2_boundary_poly.Vertices(:,1)); %c2 must be symmetric around x=0 for channel boundary conditions.
+Ly = max(c2_boundary_poly.Vertices(:,2)); 
 live = cat(1,Floe.alive);
 Floe(live == 0) = [];
 
@@ -146,6 +146,8 @@ end
 count = 1;
 clear p
 
+axis manual
+
 plot(Xbond,Ybond,'r.','linewidth',3)
 plot(Xbroken,Ybroken,'bx','linewidth',2)
 hold on
@@ -158,7 +160,7 @@ end
 set(0,'CurrentFigure',fig);
 
 colormap('gray'); caxis([0 1]);
-axis([-Lx Lx -Lymax Lymax])
+axis([-Lxmax Lxmax  -Lymax Lymax])
 
 set(gca,'Ydir','normal');
 
