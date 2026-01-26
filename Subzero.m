@@ -71,7 +71,7 @@ min_floe_size = (4*Lx*Ly-sum(cat(1,Floe(1:Nb).area)))/20000; %define minimum flo
 Ly = max(c2_boundary(2,:));Lx = 1.25*max(c2_boundary(1,:));
 c2_boundary =[-Lx -Lx Lx Lx; -Ly Ly Ly -Ly];
 c2_boundary_poly = polyshape(c2_boundary');
-c2_border = polyshape(2*[-Lx -Lx Lx Lx; -Ly Ly Ly -Ly]'); c2_border = subtract(c2_border, c2_boundary_poly);
+
 floebound = initialize_floe_values(c2_border, height,1);
 
 %Define Modulus for floe interactions
@@ -92,7 +92,7 @@ dhdt = 1; %Set to 1 for ice to grow in thickness over time
 
 nDTOut=10; %Output frequency (in number of time steps)
 
-nSnapshots=5;  %Total number of model snapshots to save
+nSnapshots=50;  %Total number of model snapshots to save
 
 nDT=nDTOut*nSnapshots; %Total number of time steps
 
@@ -156,7 +156,7 @@ end
 
 %% Solving for floe trajectories
 tic; 
-while side < 2.5
+while i_step < nDT
 % while im_num<nSnapshots
 
     if mod(i_step,10)==0        
