@@ -58,7 +58,7 @@ min_floe_size = 2*Lx*Ly/10000;% Define the minimum floe size you want in initial
 
 %Initialize Floe state
 target_concentration = 1;
-[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,100,1,min_floe_size);
+[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,2500,1,min_floe_size);
 
 Floe0 = Floe;
 
@@ -87,7 +87,6 @@ end
 L_mean = median(L);
 save('Modulus.mat','Modulus','r_mean','L_mean');
 
-%% RUN FOR 10 STEPS AND THEN STOP
 
 dhdt = 1; %Set to 1 for ice to grow in thickness over time
 
