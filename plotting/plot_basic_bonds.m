@@ -3,8 +3,6 @@ function [fig] =plot_basic_bonds(fig, Floe, ocean, Lx, Ly, c2_boundary_poly,Nbou
 %thickness of the floes
 Lxmax = Lx;
 Lymax = Ly;
-Lx = max(c2_boundary_poly.Vertices(:,1)); %c2 must be symmetric around x=0 for channel boundary conditions.
-Ly = max(c2_boundary_poly.Vertices(:,2)); 
 live = cat(1,Floe.alive);
 Floe(live == 0) = [];
 
