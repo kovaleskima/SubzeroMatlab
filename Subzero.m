@@ -58,7 +58,7 @@ min_floe_size = 2*Lx*Ly/10000;% Define the minimum floe size you want in initial
 
 %Initialize Floe state
 target_concentration = 1;
-[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,100,1,min_floe_size);
+[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,1000,1,min_floe_size);
 
 Floe0 = Floe;
 
@@ -92,7 +92,7 @@ dhdt = 1; %Set to 1 for ice to grow in thickness over time
 
 nDTOut=10; %Output frequency (in number of time steps)
 
-nSnapshots=50;  %Total number of model snapshots to save
+nSnapshots=200;  %Total number of model snapshots to save
 
 nDT=nDTOut*nSnapshots; %Total number of time steps
 
