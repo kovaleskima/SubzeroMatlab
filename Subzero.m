@@ -52,7 +52,7 @@ c2_boundary=initialize_boundaries();
 Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
 c2_boundary_poly = polyshape(c2_boundary');
 c2_border = polyshape(2*[-Lx -Lx Lx Lx; -Ly Ly Ly -Ly]'); c2_border = subtract(c2_border, c2_boundary_poly);
-
+floebound = initialize_floe_values(c2_border, height,1);
 uright = -7; uleft = 0; %Define speeds that boundaries might be moving with
 min_floe_size = 2*Lx*Ly/10000;% Define the minimum floe size you want in initial configuration
 
@@ -97,9 +97,9 @@ nDT=nDTOut*nSnapshots; %Total number of time steps
 nSimp = 20;
 
 % use pc=(...) to set local write directory for parpool on HPC cluster
-pc = parcluster('Processes')
+pc = parcluster('Processes');
 pc.JobStorageLocation = 'matlab_jobs';
-nPar = 12; %Number of workers for parfor
+nPar = 6; %Number of workers for parfor
 poolobj = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(poolobj)
     parpool(pc, nPar);
@@ -228,9 +228,9 @@ while i_step < nDT
 
         % MOVE BOUNDARIES %
         xb = c2_boundary(1,:);
-	xb = xb + 10*[1 -1 -1 1]
         yb = c2_boundary(2,:);
-        yb = yb - 10*[-1 1 1 -1];
+        xb = xb - 2.5*[-1 -1 1 1];
+        yb = yb + 2.5*[-1 1 1 -1];%
         c2_boundary = [xb; yb];
         Ly = max(c2_boundary(2,:));Lx = max(c2_boundary(1,:));
         c2_boundary_poly = polyshape(c2_boundary');

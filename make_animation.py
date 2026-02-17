@@ -3,9 +3,9 @@ import os
 from glob import glob
 
 # === CONFIGURATION ===
-input_folder = './figs/'   # <- change this to your folder
-output_file = 'animation.mp4'
-frame_rate = 10  # frames per second
+input_folder = './figs_downloaded/'   # <- change this to your folder
+output_file = 'subzero.mp4'
+frame_rate = 10 # frames per second
 
 # === LOAD PNG FILES ===
 image_files = sorted(glob(os.path.join(input_folder, '*.jpg')))
