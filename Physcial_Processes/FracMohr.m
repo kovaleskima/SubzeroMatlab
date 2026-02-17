@@ -74,7 +74,7 @@ for ii = 1:length(Floe)
             end
             
             % Fracture decision
-            if abs(Sig1(count)) > 1.65e4 || abs(Sig2(count)) > 1.65e4
+            if abs(Sig1(count)) > 1.65e5 || abs(Sig2(count)) > 1.65e5
                 [Floe(ii).bonds(bondMask).broken] = deal(true);
                 if ~isempty(BndNums)
                     neighborMask = ismember(BndNums, Floe(ii).num);
