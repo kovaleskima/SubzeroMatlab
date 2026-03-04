@@ -58,7 +58,7 @@ min_floe_size = 2*Lx*Ly/10000;% Define the minimum floe size you want in initial
 
 %Initialize Floe state
 target_concentration = 1;
-[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,100,1,min_floe_size);
+[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,500,1,min_floe_size);
 
 Floe0 = Floe;
 
@@ -85,12 +85,15 @@ end
 L_mean = median(L);
 save('Modulus.mat','Modulus','r_mean','L_mean');
 
+%Define Yield Polygon
+load("yield_polygon.mat");
+yield_polygon = polyshape(yield_polygon);
 
 dhdt = 1; %Set to 1 for ice to grow in thickness over time
 
-nDTOut=50; %Output frequency (in number of time steps)
+nDTOut=1; %Output frequency (in number of time steps)
 
-nSnapshots=200;  %Total number of model snapshots to save
+nSnapshots=450;  %Total number of model snapshots to save
 
 nDT=nDTOut*nSnapshots; %Total number of time steps
 
@@ -99,7 +102,7 @@ nSimp = 20;
 % use pc=(...) to set local write directory for parpool on HPC cluster
 pc = parcluster('Processes');
 pc.JobStorageLocation = 'matlab_jobs';
-nPar = 6; %Number of workers for parfor
+nPar = 8; %Number of workers for parfor
 poolobj = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(poolobj)
     parpool(pc, nPar);
@@ -246,7 +249,7 @@ while i_step < nDT
             [fig] =plot_basic_bonds(fig,Floe,ocean, Lx, Ly, c2_boundary_poly,Nb,Nbond,PERIODIC);
             exportgraphics(fig,['./FloesOut/figs/fig' num2str((i_step/10),'%03.f') '.jpg']);
             close(fig);
-            save(['./FloesOut/Floes/Floe' num2str(i_step/10, '%03.f') '.mat'], 'Floe', 'bonds', 'Nbond', 'Nb');
+            save(['./FloesOut/Floes/Floe' num2str(i_step/10, '%03.f') '.mat'], 'Floe');
         end
         
     end
@@ -282,7 +285,7 @@ while i_step < nDT
 
     if FRACTURES && mod(i_step,10)==0 %&& im_num > 40
         compactness = sum(cat(1,Floe.area))/area(c2_boundary_poly);
-        [Floe,Princ] = FracMohr(Floe,Nb,min_floe_size,compactness);
+        [Floe,Princ] = FracMohr(Floe,Nb,min_floe_size,compactness, yield_polygon);
     end
  
     if CORNERS && mod(i_step,10)==0

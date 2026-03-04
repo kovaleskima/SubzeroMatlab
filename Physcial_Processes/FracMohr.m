@@ -1,4 +1,4 @@
-function [Floe,Princ] = FracMohr(Floe,Nb,min_floe_size,concentration)
+function [Floe,Princ] = FracMohr(Floe,Nb,min_floe_size,concentration,yield_polygon)
 %Use Mohr's cone to determine which floes are fractured
 %   If Principal stresses are outside the cone then the floes are fractured
 rho_ice=920;
@@ -49,8 +49,8 @@ for ii = 1:length(Floe)
             
             nb = numel(bnd_tmp);
             for kk = 1:nb
-                Sig1(count) = Sig1(count) + bnd_tmp(kk).Stress(1);
-                Sig2(count) = Sig2(count) + bnd_tmp(kk).Stress(2);
+                Sig1(count) = real(Sig1(count) + bnd_tmp(kk).Stress(1));
+                Sig2(count) = real(Sig2(count) + bnd_tmp(kk).Stress(2));
                 bnd_tmp(kk).Stress = [0; 0];
             end
             
@@ -72,10 +72,17 @@ for ii = 1:length(Floe)
             else
                 BndNums = [];
             end
-            
-            % Fracture decision
-            if abs(Sig1(count)) > 1.65e5 || abs(Sig2(count)) > 1.65e5
-                [Floe(ii).bonds(bondMask).broken] = deal(true);
+
+            % Convert sigma 1 and sigma 2 to their stress invariants
+            invariant1 = 0.5*(Sig1(count)+Sig2(count));
+            invariant2 = 0.5*(Sig1(count)-Sig2(count));
+            % Scale to desired bond strength
+            yield_polygon_scaled = translate(yield_polygon, [0.5 0]);
+            yield_polygon_scaled = scale(yield_polygon_scaled, 1e5);
+            % Fracture if stresses are outside the polygon
+            %if ~isinterior(yield_polygon_scaled, invariant1, invariant2)
+            if abs(Sig1(count))>1.65e4 | abs(Sig2(count)) > 1.65e4
+	 	[Floe(ii).bonds(bondMask).broken] = deal(true);
                 if ~isempty(BndNums)
                     neighborMask = ismember(BndNums, Floe(ii).num);
                     [Floe(ii).bonds(neighborMask).broken] = deal(true);

@@ -1,0 +1,35 @@
+Running Subzero
+[Warning: Private directories not allowed in MATLAB path:
+/mmfs1/gscratch/scrubbed/makov/2_SubzeroMatlab/./private] 
+[> In path (line 109)
+In addpath>doPathAddition (line 116)
+In addpath (line 80)
+In paths (line 8)
+In Subzero (line 32)] 
+[Warning: Polyshape has duplicate vertices, intersections, or other
+inconsistencies that may produce inaccurate or unexpected results. Input data
+has been modified to create a well-defined polyshape.] 
+[> In polyshape/checkAndSimplify (line 523)
+In polyshape (line 175)
+In Subzero (line 90)] 
+Starting parallel pool (parpool) using the 'Processes' profile ...
+Connected to parallel pool with 8 workers.
+ 
+Elapsed time is 0.011389 seconds.
+0 timesteps comleted
+number of collisions: 150
+ 
+[Warning: MATLAB has disabled some advanced graphics rendering features by
+switching to software OpenGL. For more information, click <a
+href="matlab:opengl('problems')">here</a>.] 
+ 
+Elapsed time is 69.741716 seconds.
+10 timesteps comleted
+number of collisions: 2878
+ 
+ 
+Elapsed time is 57.161726 seconds.
+20 timesteps comleted
+number of collisions: 2878
+ 
+[2026-03-02T11:29:21.956] error: *** JOB 33611050 ON n3263 CANCELLED AT 2026-03-02T11:29:21 DUE to SIGNAL Terminated ***
