@@ -1,4 +1,4 @@
-function [ force_1, pcontact, overlap,gam] = floe_interactions_poly_con2(floe1, floe2, c2_boundary,PERIODIC,Modulus,dt,r_mean,L_mean)
+function [ force_1, pcontact, overlap,gam] = floe_interactions_poly_con2(floe1, floe2, PERIODIC,Modulus,dt)%c2_boundary,,r_mean,L_mean)
 id ='MATLAB:polyshape:repairedBySimplify';
 warning('off',id)
 id2 = 'MATLAB:polyshape:boolOperationFailed';
@@ -7,6 +7,8 @@ id3 ='MATLAB:polyshape:boundary3Points';
 warning('off',id3)
 
 h1 = floe1.h; h2 = floe2.h;
+% r1 = sqrt(floe1.area); if floe1.bonds.bowtie == 1; E1 = floe1.bonds.L/r_bond*Modulus*r_mean/r1; else; E1 = Modulus; end
+% r2 = sqrt(floe2.area); if floe2.bonds.bowtie == 1; E2 = floe2.bonds.L/r_bond*Modulus*r_mean/r2; else; E2 = Modulus; end
 r1 = sqrt(floe1.area); E1 = Modulus;%if floe1.bonds.bowtie == 1; E1 = floe1.bonds.L/r_bond*Modulus*r_mean/r1; else; E1 = Modulus; end
 r2 = sqrt(floe2.area); E2 = Modulus;%if floe2.bonds.bowtie == 1; E2 = floe2.bonds.L/r_bond*Modulus*r_mean/r2; else; E2 = Modulus; end
 Force_factor=E1*E2*h1*h2/(E1*h1*r2+E2*h2*r1); overlap = 0;
@@ -17,7 +19,7 @@ if isfield(floe2,'alive')
   Force_factor=E1*h1/r1;
 end
 nu = 0.3;
-G = Modulus/(2*(1+nu)); mu = 0.45;
+G = Modulus/(2*(1+nu)); mu = 0.25;
 gam = 0;
 c1=[floe1.c_alpha(1,:)+floe1.Xi; floe1.c_alpha(2,:)+floe1.Yi];
 if isfield(floe2,'c')
@@ -38,7 +40,7 @@ else
         end
     end
 end
-
+% xx = 1; xx(1)=[1 2];
 if isempty(Xi)
     Ar = 0;
 else
@@ -49,8 +51,8 @@ else
     end
 end
 
-
-if  (max(c1(1,:))<max(c2_boundary(1,:)) && min(c1(1,:))>min(c2_boundary(1,:)) && max(c1(2,:))<max(c2_boundary(2,:)) && min(c1(2,:))>min(c2_boundary(2,:))|| floe2.area<0.95*area(polyshape(c2_boundary')) || PERIODIC) 
+if boundary == 0 || PERIODIC
+% if  (max(c1(1,:))<max(c2_boundary(1,:)) && min(c1(1,:))>min(c2_boundary(1,:)) && max(c1(2,:))<max(c2_boundary(2,:)) && min(c1(2,:))>min(c2_boundary(2,:))|| floe2.area<0.95*area(polyshape(c2_boundary')) || PERIODIC) 
     if sum(Ar)/floe1.area > 0.55
         overlap = Inf;
     elseif sum(Ar)/floe2.area > 0.55
@@ -74,9 +76,9 @@ else
     
     N1 = length(c1)-1; N2 = length(c2)-1;
     Amin =  min([N1,N2])*100/1.75;
-    if abs(length(Ar)-length(Xi)) > 0
-        save('fail.mat','floe1','floe2','c2_boundary','PERIODIC','Modulus','dt');
-    end    
+%     if abs(length(Ar)-length(Xi)) > 0
+%         save('fail.mat','floe1','floe2','c2_boundary','PERIODIC','Modulus','dt');
+%     end    
     Xi(Ar<Amin) = []; Yi(Ar<Amin) = []; Ar(Ar<Amin) = [];
     N_contact=length(Xi);
     
@@ -97,9 +99,9 @@ else
         X = Xi{k}; Y = Yi{k};
         poly = polyshape(X,Y);
         [cx, cy] = centroid(poly);
-        [verts,dist] = dsearchn([X Y],P');
-        p = [X(verts(dist<1),:) Y(verts(dist<1),:)];
-        [m,~] = size(p);
+        p = dsearchn_test([X Y],P');
+%         p = [X(verts(dist<1),:) Y(verts(dist<1),:)];
+        [m,~] = size(p); 
         
         if Ar(k) == 0
             force_dir = [0; 0];
@@ -149,6 +151,7 @@ else
             f_dir = sum(Fn(on,:),1);
             xx = 1; xx(1) =[1 2];
         end
+        
         if boundary
             [XInew,YInew] = polyclip([X1new' Y1new'],c2','dif');
         else
@@ -190,63 +193,64 @@ else
 
 end
 
-if isempty(force_1)
-    xx = 1; xx(1) =[1 2];
-end
 
 if ismember(floeNum,BondNum) %&& sum(abs(force_1(:)))~=0
     Num1 = ismember(BondNum,floeNum); BondNum2 = cat(1,floe2.bonds.Num); Num2 = ismember(BondNum2,floe1.num);
-    broken1 = cat(1, floe1.bonds(Num1).broken);
-    broken2 = cat(1, floe2.bonds(Num2).broken);
-    intactMask = ~(broken1 | broken2);
-
-    if ~any(intactMask)
-	    return
-    end
-
-    L = cat(1, floe1.bonds(Num1).L); L = L(intactMask);
-    r_bond=cat(1, floe1.bonds(Num1).r_bnd);r_bond=r_bond(intactMask);
-    ;
+    L = floe1.bonds(Num1).L; %r_bond=floe1.bonds(Num1).r_bnd;
     E1 = Modulus; E2 = Modulus;
-
-    Force_factor=E1*E2*h1*h2/(E1*h1*r2+E2*h2*r1)/33.33; %Tried /10 and it broke to much
+%    E1 = L/L_mean*Modulus*r_mean/r_bond; E2 = Modulus;
+%    Force_factor=E1*E2*h1*h2/(E1*h1*r2+E2*h2*r1)/30;
+    Force_factor=E1*E2*h1*h2/(E1*h1*r2+E2*h2*r1)/100;
     A_rot1=[cos(floe1.alpha_i) -sin(floe1.alpha_i); sin(floe1.alpha_i) cos(floe1.alpha_i)];
     A_rot2=[cos(floe2.alpha) -sin(floe2.alpha); sin(floe2.alpha) cos(floe2.alpha)];
-    Xb1 = cat(1,floe1.bonds(Num1).Xb); Xb1 = Xb1(intactMask); Yb1 = cat(1,floe1.bonds(Num1).Yb);Yb1 = Yb1(intactMask);
-    Xb2 = cat(1,floe2.bonds(Num2).Xb); Xb2 = Xb2(intactMask); Yb2 = cat(1,floe2.bonds(Num2).Yb);Yb2 = Yb2(intactMask);
-    Xc1 = cat(1,floe1.bonds(Num1).Xc); Xc1 = Xc1(intactMask); Yc1 = cat(1,floe1.bonds(Num1).Yc);Yc1 = Yc1(intactMask);
-    Xc2 = cat(1,floe2.bonds(Num2).Xc); Xc2 = Xc2(intactMask); Yc2 = cat(1,floe2.bonds(Num2).Yc);Yc2 = Yc2(intactMask);
-    Fx_p = cat(1,floe1.bonds(Num1).Fx_p);Fx_p = Fx_p(intactMask); Fy_p = cat(1,floe1.bonds(Num1).Fy_p);Fy_p = Fy_p(intactMask);
+%     Xb1 = floe1.bonds(Num1).Xb; Yb1 = floe1.bonds(Num1).Yb; P_bond1 = A_rot1*[Xb1;Yb1];
+%     Xb2 = floe2.bonds(Num2).Xb; Yb2 = floe2.bonds(Num2).Yb; P_bond2 = A_rot2*[Xb2;Yb2];
+%     Xc1 = floe1.bonds(Num1).Xb; Yc1 = floe1.bonds(Num1).Yb; P_bond1 = A_rot1*[Xc1;Yc1];
+%     Xc2 = floe2.bonds(Num2).Xb; Yc2 = floe2.bonds(Num2).Yb; P_bond2 = A_rot2*[Xc2;Yc2];
+%     v1 = ([floe1.Ui floe1.Vi]+ floe1.ksi_ice*(P_bond1'));
+%     v2 = ([floe2.Ui floe2.Vi]+ floe2.ksi_ice*(P_bond2'));
+%     F_bond = [floe1.bonds(Num1).Fx_p floe1.bonds(Num1).Fy_p]*damping + Force_factor*L*dt*(v2-v1);
+%     [Ny,~] = size(force_1);
+%     force_1(Ny+1,:) = F_bond;
+%     overlap(Ny+1) = 0;
+%     pcontact(Ny+1,:) = (P_bond1'+[floe1.Xi floe1.Yi]+P_bond2'+[floe2.Xi floe2.Yi])/2;
+    Xb1 = cat(1,floe1.bonds(Num1).Xb); Yb1 = cat(1,floe1.bonds(Num1).Yb);
+    Xb2 = cat(1,floe2.bonds(Num2).Xb); Yb2 = cat(1,floe2.bonds(Num2).Yb);
+    Xc1 = cat(1,floe1.bonds(Num1).Xc); Yc1 = cat(1,floe1.bonds(Num1).Yc);
+    Xc2 = cat(1,floe2.bonds(Num2).Xc); Yc2 = cat(1,floe2.bonds(Num2).Yc);
+%     Fx_p = cat(1,floe1.bonds(Num1).Fx_p); Fy_p = cat(1,floe1.bonds(Num1).Fy_p);
     F_bond = zeros(2,length(Xb1));
     for ii = 1:length(Xb1)
-        L_i = L(ii);
-	r_bond_i = r_bond(ii);
-
-	Pb_1 = A_rot1*[Xb1(ii);Yb1(ii)]+[floe1.Xi; floe1.Yi];
+        Pb_1 = A_rot1*[Xb1(ii);Yb1(ii)]+[floe1.Xi; floe1.Yi];
         Pb_2 = A_rot2*[Xb2(ii);Yb2(ii)]+[floe2.Xi; floe2.Yi];
         Pc_1 = A_rot1*[Xc1(ii);Yc1(ii)]+[floe1.Xi; floe1.Yi];
         Pc_2 = A_rot2*[Xc2(ii);Yc2(ii)]+[floe2.Xi; floe2.Yi];
-        P0 = Pc_2';
-        P1 = Pb_2';
-        P2 = Pb_1';
-        n1 = (P2 - P0) / norm(P2 - P0);  % Normalized vectors
-        n2 = (P1 - P0) / norm(P1 - P0);
+%         P0 = Pc_2';
+%         P1 = Pb_2';
+%         P2 = Pb_1';
+%         n1 = (P2 - P0) / norm(P2 - P0);  % Normalized vectors
+%         n2 = (P1 - P0) / norm(P1 - P0);
+        n1 = (Pb_1' - Pc_2') / norm(Pb_1' - Pc_2');  % Normalized vectors
+        n2 = (Pb_2' - Pc_2') / norm(Pb_2' - Pc_2');
         n0 = [1 0];
         angle3 = atan2(norm(det([n2; n1])), dot(n1, n2));
         angle0 = atan2(norm(det([n2; n0])), dot(n2, n0));
         A_rot=[cos(-angle0) -sin(-angle0); sin(-angle0) cos(-angle0)];
-        n1_new = A_rot*n1'; 
+        n1_new = A_rot*n1'; %n2_new = A_rot*n2';
         d = sqrt((Pc_2(2)-Pc_1(2))^2+(Pc_2(1)-Pc_1(1))^2);
         X_b = -sign(n1_new(1))*d*abs(cos(angle3)); Y_b = -sign(n1_new(2))*d*abs(sin(angle3));
         
         v1 = ([floe1.Ui floe1.Vi]+ floe1.ksi_ice*(Pc_1'));
         v2 = ([floe2.Ui floe2.Vi]+ floe2.ksi_ice*(Pc_2'));
-        F_bond_damp = damping*Force_factor*L_i*dt*(v2-v1);
+        F_bond_damp = damping*Force_factor*L*dt*(v2-v1);
         
-        F_bond_tmp =  Force_factor*L_i*[X_b; Y_b];
-        A_rot=[cos(angle0) -sin(angle0); sin(angle0) cos(angle0)];
-
-        F_bond(:,ii) =  F_bond_damp'+A_rot*F_bond_tmp;
+        F_bond_tmp =  Force_factor*L*[X_b; Y_b];
+%         A_rot=[cos(angle0) -sin(angle0); sin(angle0) cos(angle0)];
+%         if abs(X_b)<1
+%             xx = 1; xx(1) =[1 2];
+%         end
+%         F_bond(:,ii) = [Fx_p(ii); Fy_p(ii)]*damping +A_rot*F_bond_tmp;
+        F_bond(:,ii) =  F_bond_damp'+A_rot'*F_bond_tmp;
         contacts(ii,:) = (Pc_1'+Pc_2')/2;
     end
     [Ny,~] = size(force_1);

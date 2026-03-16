@@ -5,7 +5,6 @@ addpath('./collisions')
 addpath('./plotting') 
 addpath('./polygon_operations') 
 addpath('./Physcial_Processes') 
-addpath('./private')
-addpath('./FloesOut/')
+addpath('./private') 
 end
 
