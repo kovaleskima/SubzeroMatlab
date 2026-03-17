@@ -7,8 +7,8 @@
 
 using namespace ClipperLib;
 
-typedef __int64 LONGML64; 
-typedef __int64 longML64;
+typedef long long LONGML64;
+typedef long long longML64;
 
 void read_polygons_MATLAB(const mxArray *prhs, Paths &poly) 
 {

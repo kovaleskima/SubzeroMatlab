@@ -64,10 +64,8 @@ min_floe_size = 2*Lx*Ly/10000;% Define the minimum floe size you want in initial
 
 %Initialize Floe state
 target_concentration = 1;
-%[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,1500,1,min_floe_size);
-%save('FloeInit.mat','Floe','bonds','Nbond','Nb');
-% load FloeInit
-load('./Floes_bnds1/Floe0000001.mat','Floe','Nbond','Nb');
+[Floe,bonds, Nb,Nbond] = initial_concentration(c2_boundary,target_concentration,height,1500,1,min_floe_size);
+%load('./Floes_bnds1/Floe0000001.mat','Floe','Nbond','Nb');
 Floe0 = Floe;
 Nums = cat(1,Floe.num);
 for ii = 1:length(Floe)
@@ -86,24 +84,6 @@ for ii = 1:length(Floe)
         end
     end
 end
-%Floe(1).Ui = 0.5; %Floe(2).Ui = -0.5;
-%Floe(1).Vi = 0.1; Floe(2).Vi = -0.5;
-% Floe(1).ksi_ice = 0.01; Floe(2).ksi_ice = 0;
-% Floe(2) = [];
-% save('Floe0.mat','Floe','Nb','Nbond');
-% xx = 1; xx(1) =[1 2];
-% Floe0 = Floe;
-% save('Floe0.mat','Floe0');
-%load('./Floes_bnds/Floe0000001.mat','Floe','Nbond','Nb');
-% for jj = 1+Nbond:length(Floe)
-%     BondNum = Floe(jj).bonds.BondNum;
-%     if ~isempty(Floe(jj).bonds.poly)
-%         R = regions(polyshape(Floe(jj).bonds.poly));
-%         if ~(length(R)==length(BondNum))
-%             xx = 1; xx(1) =[1 2];
-%         end
-%     end
-% end
 
 if isfield(Floe,'poly')
     Floe=rmfield(Floe,{'poly'});
